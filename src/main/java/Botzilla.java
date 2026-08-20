@@ -16,16 +16,25 @@ public class Botzilla {
         System.out.println("____________________________________________________________");
 
         Scanner scanner = new Scanner(System.in);
+        String[] tasks = new String[100];
+        int count = 0;
 
         while (true) {
             String input = scanner.nextLine();
 
             if (input.equals("bye")) {
                 break;
+            } else if (input.equals("list")) {
+                for (int i = 0; i < count; i++) {
+                    System.out.println(" " + (i + 1) + ". " + tasks[i]);
+                }
+                System.out.println("____________________________________________________________");
+            } else {
+                tasks[count] = input;
+                count++;
+                System.out.println("item added: " + input);
+                System.out.println("____________________________________________________________");
             }
-
-            System.out.println(input);
-            System.out.println("____________________________________________________________");
         }
 
         System.out.println("Cheers! Have a great day!");
