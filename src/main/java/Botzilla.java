@@ -1,12 +1,14 @@
+import java.util.ArrayList;
 import java.util.Scanner;
 
 public class Botzilla {
     public static void main(String[] args) {
-        String banner = "    ____        __        _ ____     \n" +
-                        "   / __ )____  / /_____  (_) / /___ _\n" +
-                        "  / __  / __ \\/ __/_  / / / / / __ `/\n" +
-                        " / /_/ / /_/ / /_  / /_/ / / / /_/ / \n" +
-                        "/_____/\\____/\\__/ /___/_/_/_/\\__,_/  \n";
+        String banner =
+                "    ____        __          ____     \n" +
+                "   / __ )____  / /_____  (_) / /___ _\n" +
+                "  / __  / __ \\/ __/_  / / / / / __ `/\n" +
+                " / /_/ / /_/ / /_  / /_/ / / / /_/ / \n" +
+                "/_____/\\____/\\__/ /___/_/_/_/\\__,_/  \n";
 
         System.out.println("____________________________________________________________");
         System.out.println(banner);
@@ -15,8 +17,7 @@ public class Botzilla {
         System.out.println("____________________________________________________________");
 
         Scanner scanner = new Scanner(System.in);
-        Task[] tasks = new Task[100];
-        int taskCount = 0;
+        ArrayList<Task> tasks = new ArrayList<>();
 
         while (true) {
             String input = scanner.nextLine();
@@ -26,37 +27,28 @@ public class Botzilla {
                     break;
                 } else if (input.equals("list")) {
                     System.out.println(" Here are the tasks in your list:");
-                    for (int i = 0; i < taskCount; i++) {
-                        System.out.println(" " + (i + 1) + "." + tasks[i]);
+                    for (int i = 0; i < tasks.size(); i++) {
+                        System.out.println(" " + (i + 1) + "." + tasks.get(i));
                     }
                     System.out.println("____________________________________________________________");
                 } else if (input.startsWith("mark ")) {
-                    markTask(tasks, taskCount, input.substring(5), true);
+                    markTask(tasks, input.substring(5), true);
                     System.out.println("____________________________________________________________");
                 } else if (input.startsWith("unmark ")) {
-                    markTask(tasks, taskCount, input.substring(7), false);
+                    markTask(tasks, input.substring(7), false);
+                    System.out.println("____________________________________________________________");
+                } else if (input.equals("delete") || input.startsWith("delete ")) {
+                    deleteTask(tasks, input);
                     System.out.println("____________________________________________________________");
                 } else if (input.equals("todo") || input.startsWith("todo ")) {
-                    if (taskCount >= 100) {
-                        throw new BotzillaException("MAX CAP HIT, your task list is full (max 100 tasks).");
-                    }
-                    tasks[taskCount] = parseTodo(input);
-                    taskCount++;
-                    printAdded(tasks[taskCount - 1], taskCount);
+                    tasks.add(parseTodo(input));
+                    printAdded(tasks.get(tasks.size() - 1), tasks.size());
                 } else if (input.equals("deadline") || input.startsWith("deadline ")) {
-                    if (taskCount >= 100) {
-                        throw new BotzillaException("MAX CAP HIT, your task list is full (max 100 tasks).");
-                    }
-                    tasks[taskCount] = parseDeadline(input);
-                    taskCount++;
-                    printAdded(tasks[taskCount - 1], taskCount);
+                    tasks.add(parseDeadline(input));
+                    printAdded(tasks.get(tasks.size() - 1), tasks.size());
                 } else if (input.equals("event") || input.startsWith("event ")) {
-                    if (taskCount >= 100) {
-                        throw new BotzillaException("MAX CAP HIT, your task list is full (max 100 tasks).");
-                    }
-                    tasks[taskCount] = parseEvent(input);
-                    taskCount++;
-                    printAdded(tasks[taskCount - 1], taskCount);
+                    tasks.add(parseEvent(input));
+                    printAdded(tasks.get(tasks.size() - 1), tasks.size());
                 } else {
                     throw new BotzillaException("Sorry bestie I don't know what that means :(");
                 }
@@ -79,13 +71,27 @@ public class Botzilla {
         System.out.println("____________________________________________________________");
     }
 
-    private static void markTask(Task[] tasks, int taskCount, String numberText, boolean markAsDone) throws BotzillaException {
-        int index = parseTaskNumber(numberText, taskCount);
+    private static void printDeleted(Task task, int taskCount) {
+        System.out.println(" Your wish is my command. I've removed this task:");
+        System.out.println("   " + task);
+        System.out.println(" You have " + taskCount + " tasks in the list.");
+    }
+
+    private static void markTask(ArrayList<Task> tasks, String numberText, boolean markAsDone) throws BotzillaException {
+        int index = parseTaskNumber(numberText, tasks.size());
+        Task task = tasks.get(index);
         if (markAsDone) {
-            System.out.println(" " + tasks[index].mark());
+            System.out.println(" " + task.mark());
         } else {
-            System.out.println(" " + tasks[index].unmark());
+            System.out.println(" " + task.unmark());
         }
+    }
+
+    private static void deleteTask(ArrayList<Task> tasks, String input) throws BotzillaException {
+        String numberText = input.length() > 6 ? input.substring(6).trim() : "";
+        int index = parseTaskNumber(numberText, tasks.size());
+        Task removed = tasks.remove(index);
+        printDeleted(removed, tasks.size());
     }
 
     private static int parseTaskNumber(String numberText, int taskCount) throws BotzillaException {
