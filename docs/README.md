@@ -1,6 +1,4 @@
-# Duke User Guide
-
-// Update the title above to match the actual product name
+# Botzilla User Guide
 
 // Product screenshot goes here
 
@@ -17,7 +15,12 @@ Example: `keyword (optional arguments)`
 // A description of the expected outcome goes here
 
 ```
-expected output
+    ____        __        _ ____     
+   / __ )____  / /_____  (_) / /___ _
+  / __  / __ \/ __/_  / / / / / __ `/
+ / /_/ / /_/ / /_  / /_/ / / / /_/ / 
+/_____/\____/\__/ /___/_/_/_/\__,_/
+
 ```
 
 ## Feature ABC
