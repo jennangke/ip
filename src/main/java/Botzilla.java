@@ -25,29 +25,70 @@ public class Botzilla {
             if (input.equals("bye")) {
                 break;
             } else if (input.equals("list")) {
+                System.out.println(" Here are the tasks in your list:");
                 for (int i = 0; i < taskCount; i++) {
-                    System.out.println(" " + (i + 1) + ". " + tasks[i]);
+                    System.out.println(" " + (i + 1) + "." + tasks[i]);
                 }
                 System.out.println("____________________________________________________________");
             } else if (input.startsWith("mark ")) {
-                int index = Integer.parseInt(input.substring(5)) - 1;
-                System.out.println(" " + tasks[index].mark());
+                markTask(tasks, taskCount, input.substring(5), true);
                 System.out.println("____________________________________________________________");
             } else if (input.startsWith("unmark ")) {
-                int index = Integer.parseInt(input.substring(7)) - 1;
-                System.out.println(" " + tasks[index].unmark());
+                markTask(tasks, taskCount, input.substring(7), false);
                 System.out.println("____________________________________________________________");
-            } else {
-                tasks[taskCount] = new Task(input);
+            } else if (input.startsWith("todo ")) {
+                String name = input.substring(5);
+                tasks[taskCount] = new ToDoTask(name);
                 taskCount++;
-                System.out.println("task added: " + input);
+                printAdded(tasks[taskCount - 1], taskCount);
+            } else if (input.startsWith("deadline ")) {
+                String rest = input.substring(9);
+                String[] parts = rest.split(" /by ", 2);
+                tasks[taskCount] = new DeadlineTask(parts[0], parts[1]);
+                taskCount++;
+                printAdded(tasks[taskCount - 1], taskCount);
+            } else if (input.startsWith("event ")) {
+                String rest = input.substring(6);
+                String[] fromSplit = rest.split(" /from ", 2);
+                String[] toSplit = fromSplit[1].split(" /to ", 2);
+                tasks[taskCount] = new EventTask(fromSplit[0], toSplit[0], toSplit[1]);
+                taskCount++;
+                printAdded(tasks[taskCount - 1], taskCount);
+            } else {
+                System.out.println(" I'm sorry, I don't understand that command.");
                 System.out.println("____________________________________________________________");
             }
         }
 
-        System.out.println("Cheers! Have a great day!");
+        System.out.println("Cheers! Have a great day ahead!");
         System.out.println("____________________________________________________________");
 
         scanner.close();
+    }
+
+    private static void printAdded(Task task, int taskCount) {
+        System.out.println(" Gotcha! I've added this task:");
+        System.out.println("   " + task);
+        System.out.println(" You have " + taskCount + " tasks in the list.");
+        System.out.println("____________________________________________________________");
+    }
+
+    private static void markTask(Task[] tasks, int taskCount, String numberText, boolean markAsDone) {
+        try {
+            int index = Integer.parseInt(numberText) - 1;
+
+            if (index < 0 || index >= taskCount) {
+                System.out.println(" Hmm, I don't have a task numbered " + numberText + ".");
+                return;
+            }
+
+            if (markAsDone) {
+                System.out.println(" " + tasks[index].mark());
+            } else {
+                System.out.println(" " + tasks[index].unmark());
+            }
+        } catch (NumberFormatException e) {
+            System.out.println(" Please give me a valid task number, e.g. mark 1");
+        }
     }
 }

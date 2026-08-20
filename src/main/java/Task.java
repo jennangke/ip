@@ -1,4 +1,4 @@
-public class Task {
+public abstract class Task {
     private String name;
     private boolean isDone;
 
@@ -19,11 +19,13 @@ public class Task {
 
     @Override
     public String toString() {
-        if (isDone) {
-            return "[X] " + this.name;
-        } else {
-            return "[ ] " + this.name;
-        }
+            return "[" + getTaskType() + "]" + "[" + getTaskStatus() + "] " + this.name;
     }
+
+    protected String getTaskStatus() {
+        return isDone ? "X" : " ";
+    }
+
+    protected abstract String getTaskType();
 }
 
