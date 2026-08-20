@@ -3,14 +3,9 @@ public class EventTask extends Task {
     private String end;
 
     public EventTask(String name, String start, String end) {
-        super(name);
+        super(name, TaskType.EVENT);
         this.start = start;
         this.end = end;
-    }
-
-    @Override
-    protected String getTaskType() {
-        return "E";
     }
 
     @Override

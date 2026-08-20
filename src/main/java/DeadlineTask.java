@@ -2,13 +2,8 @@ public class DeadlineTask extends Task {
     private String due;
 
     public DeadlineTask(String name, String due) {
-        super(name);
+        super(name, TaskType.DEADLINE);
         this.due = due;
-    }
-
-    @Override
-    protected String getTaskType() {
-        return "D";
     }
 
     @Override

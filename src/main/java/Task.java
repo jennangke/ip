@@ -1,10 +1,12 @@
 public abstract class Task {
     private String name;
     private boolean isDone;
+    private TaskType type;
 
-    public Task(String name) {
+    public Task(String name, TaskType type) {
         this.name = name;
         this.isDone = false;
+        this.type = type;
     }
 
     public String mark() {
@@ -19,13 +21,13 @@ public abstract class Task {
 
     @Override
     public String toString() {
-            return "[" + getTaskType() + "]" + "[" + getTaskStatus() + "] " + this.name;
+            return "[" + type.getIcon() + "][" + getTaskStatus() + "] " + this.name;
     }
 
     protected String getTaskStatus() {
         return isDone ? "X" : " ";
     }
 
-    protected abstract String getTaskType();
+
 }
 
