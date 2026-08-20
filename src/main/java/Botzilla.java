@@ -16,8 +16,8 @@ public class Botzilla {
         System.out.println("____________________________________________________________");
 
         Scanner scanner = new Scanner(System.in);
-        String[] tasks = new String[100];
-        int count = 0;
+        Task[] tasks = new Task[100];
+        int taskCount = 0;
 
         while (true) {
             String input = scanner.nextLine();
@@ -25,14 +25,22 @@ public class Botzilla {
             if (input.equals("bye")) {
                 break;
             } else if (input.equals("list")) {
-                for (int i = 0; i < count; i++) {
+                for (int i = 0; i < taskCount; i++) {
                     System.out.println(" " + (i + 1) + ". " + tasks[i]);
                 }
                 System.out.println("____________________________________________________________");
+            } else if (input.startsWith("mark ")) {
+                int index = Integer.parseInt(input.substring(5)) - 1;
+                System.out.println(" " + tasks[index].mark());
+                System.out.println("____________________________________________________________");
+            } else if (input.startsWith("unmark ")) {
+                int index = Integer.parseInt(input.substring(7)) - 1;
+                System.out.println(" " + tasks[index].unmark());
+                System.out.println("____________________________________________________________");
             } else {
-                tasks[count] = input;
-                count++;
-                System.out.println("item added: " + input);
+                tasks[taskCount] = new Task(input);
+                taskCount++;
+                System.out.println("task added: " + input);
                 System.out.println("____________________________________________________________");
             }
         }
