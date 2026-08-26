@@ -2,9 +2,10 @@ import java.util.ArrayList;
 import java.util.Scanner;
 
 public class Botzilla {
+    private static final String FILE_PATH = "./data/botzilla.txt";
+
     public static void main(String[] args) {
-        String banner =
-                "    ____        __          ____     \n" +
+        String banner = "    ____        __        _ ____     \n" +
                 "   / __ )____  / /_____  (_) / /___ _\n" +
                 "  / __  / __ \\/ __/_  / / / / / __ `/\n" +
                 " / /_/ / /_/ / /_  / /_/ / / / /_/ / \n" +
@@ -16,8 +17,10 @@ public class Botzilla {
         System.out.println("What can I do for you on this fine day?");
         System.out.println("____________________________________________________________");
 
+        Storage storage = new Storage(FILE_PATH);
+        ArrayList<Task> tasks = storage.load();
+
         Scanner scanner = new Scanner(System.in);
-        ArrayList<Task> tasks = new ArrayList<>();
 
         while (true) {
             String input = scanner.nextLine();
@@ -33,21 +36,27 @@ public class Botzilla {
                     System.out.println("____________________________________________________________");
                 } else if (input.startsWith("mark ")) {
                     markTask(tasks, input.substring(5), true);
+                    storage.save(tasks);
                     System.out.println("____________________________________________________________");
                 } else if (input.startsWith("unmark ")) {
                     markTask(tasks, input.substring(7), false);
+                    storage.save(tasks);
                     System.out.println("____________________________________________________________");
                 } else if (input.equals("delete") || input.startsWith("delete ")) {
                     deleteTask(tasks, input);
+                    storage.save(tasks);
                     System.out.println("____________________________________________________________");
                 } else if (input.equals("todo") || input.startsWith("todo ")) {
                     tasks.add(parseTodo(input));
+                    storage.save(tasks);
                     printAdded(tasks.get(tasks.size() - 1), tasks.size());
                 } else if (input.equals("deadline") || input.startsWith("deadline ")) {
                     tasks.add(parseDeadline(input));
+                    storage.save(tasks);
                     printAdded(tasks.get(tasks.size() - 1), tasks.size());
                 } else if (input.equals("event") || input.startsWith("event ")) {
                     tasks.add(parseEvent(input));
+                    storage.save(tasks);
                     printAdded(tasks.get(tasks.size() - 1), tasks.size());
                 } else {
                     throw new BotzillaException("Sorry bestie I don't know what that means :(");
@@ -72,7 +81,7 @@ public class Botzilla {
     }
 
     private static void printDeleted(Task task, int taskCount) {
-        System.out.println(" Your wish is my command. I've removed this task:");
+        System.out.println(" Gotcha. I've removed this task:");
         System.out.println("   " + task);
         System.out.println(" You have " + taskCount + " tasks in the list.");
     }

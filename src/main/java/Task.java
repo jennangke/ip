@@ -28,6 +28,10 @@ public abstract class Task {
         return isDone ? "X" : " ";
     }
 
+    public String toFileString() {
+        return type.getIcon() + " | " + (isDone ? "1" : "0") + " | " + this.name;
+    }
+
 
 }
 

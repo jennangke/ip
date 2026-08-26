@@ -10,4 +10,9 @@ public class DeadlineTask extends Task {
     public String toString() {
         return super.toString() + " (by: " + this.due + ")";
     }
+
+    @Override
+    public String toFileString() {
+        return super.toFileString() + " | " + this.due;
+    }
 }
