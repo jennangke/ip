@@ -1,4 +1,8 @@
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Optional;
 import java.util.Scanner;
 
 public class Botzilla {
@@ -58,6 +62,9 @@ public class Botzilla {
                     tasks.add(parseEvent(input));
                     storage.save(tasks);
                     printAdded(tasks.get(tasks.size() - 1), tasks.size());
+                } else if (input.equals("on") || input.startsWith("on ")) {
+                    onDate(tasks, input);
+                    System.out.println("____________________________________________________________");
                 } else {
                     throw new BotzillaException("Sorry bestie I don't know what that means :(");
                 }
@@ -103,6 +110,42 @@ public class Botzilla {
         printDeleted(removed, tasks.size());
     }
 
+    private static void onDate(ArrayList<Task> tasks, String input) throws BotzillaException {
+        String dateText = input.length() > 2 ? input.substring(2).trim() : "";
+        if (dateText.isEmpty()) {
+            throw new BotzillaException("Please give me a date, e.g. on 2/12/2019");
+        }
+
+        Optional<LocalDateTime> parsed = DateTimeUtil.parse(dateText);
+        if (parsed.isEmpty()) {
+            throw new BotzillaException("I couldn't understand that date. Try a format like 2/12/2019.");
+        }
+        LocalDate targetDate = parsed.get().toLocalDate();
+
+        System.out.println("Hey bestie, here's what's on "
+                + targetDate.format(DateTimeFormatter.ofPattern("dd MMM yyyy")) + ":");
+
+        boolean found = false;
+        for (Task task : tasks) {
+            if (task instanceof DeadlineTask) {
+                DeadlineTask d = (DeadlineTask) task;
+                if (d.getBy() != null && d.getBy().toLocalDate().equals(targetDate)) {
+                    System.out.println(" " + task);
+                    found = true;
+                }
+            } else if (task instanceof EventTask) {
+                EventTask e = (EventTask) task;
+                if (e.getStart() != null && e.getStart().toLocalDate().equals(targetDate)) {
+                    System.out.println(" " + task);
+                    found = true;
+                }
+            }
+        }
+        if (!found) {
+            System.out.println("All clear! You are free as a lark!");
+        }
+    }
+
     private static int parseTaskNumber(String numberText, int taskCount) throws BotzillaException {
         int index;
         try {
@@ -129,7 +172,7 @@ public class Botzilla {
         String[] parts = rest.split(" /by ", 2);
         if (parts.length < 2 || parts[0].trim().isEmpty() || parts[1].trim().isEmpty()) {
             throw new BotzillaException("ADD A NAME, ADD A DATE! " +
-                    "A deadline needs a description and a '/by' date, e.g. deadline return book /by Sunday");
+                    "A deadline needs a description and a '/by' date, e.g. deadline return book /by 13/8/2026 1800");
         }
         return new DeadlineTask(parts[0].trim(), parts[1].trim());
     }
@@ -138,11 +181,11 @@ public class Botzilla {
         String rest = input.length() > 5 ? input.substring(5).trim() : "";
         String[] fromSplit = rest.split(" /from ", 2);
         if (fromSplit.length < 2 || fromSplit[0].trim().isEmpty()) {
-            throw new BotzillaException("ERROR ALERT! An event needs a description and '/from' and '/to' times, e.g. event meeting /from 2pm /to 4pm");
+            throw new BotzillaException("ERROR ALERT! An event needs a description and '/from' and '/to' times, e.g. event meeting /from 2/5/2019 1400 /to 2/5/2019 1600");
         }
         String[] toSplit = fromSplit[1].split(" /to ", 2);
         if (toSplit.length < 2 || toSplit[0].trim().isEmpty() || toSplit[1].trim().isEmpty()) {
-            throw new BotzillaException("ERROR ALERT! An event needs a description and '/from' and '/to' times, e.g. event meeting /from 2pm /to 4pm");
+            throw new BotzillaException("ERROR ALERT! An event needs a description and '/from' and '/to' times, e.g. event meeting /from 2/5/2019 1400 /to 2/5/2019 1600");
         }
         return new EventTask(fromSplit[0].trim(), toSplit[0].trim(), toSplit[1].trim());
     }
