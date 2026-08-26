@@ -12,7 +12,7 @@ public class Storage {
         this.filePath = filePath;
     }
 
-    public ArrayList<Task> load() {
+    public ArrayList<Task> load() throws BotzillaException {
         ArrayList<Task> tasks = new ArrayList<>();
         File file = new File(filePath);
 
@@ -29,7 +29,7 @@ public class Storage {
                 }
             }
         } catch (IOException e) {
-            System.out.println(" Warning: could not load saved tasks (" + e.getMessage() + ")");
+            throw new BotzillaException("Could not read saved tasks: " + e.getMessage());
         }
 
         return tasks;

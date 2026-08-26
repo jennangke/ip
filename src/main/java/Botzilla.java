@@ -1,192 +1,93 @@
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Optional;
-import java.util.Scanner;
-
 public class Botzilla {
-    private static final String FILE_PATH = "./data/botzilla.txt";
+    private Storage storage;
+    private TaskList tasks;
+    private Ui ui;
 
-    public static void main(String[] args) {
-        String banner = "    ____        __        _ ____     \n" +
-                "   / __ )____  / /_____  (_) / /___ _\n" +
-                "  / __  / __ \\/ __/_  / / / / / __ `/\n" +
-                " / /_/ / /_/ / /_  / /_/ / / / /_/ / \n" +
-                "/_____/\\____/\\__/ /___/_/_/_/\\__,_/  \n";
+    public Botzilla(String filePath) {
+        ui = new Ui();
+        storage = new Storage(filePath);
+        try {
+            tasks = new TaskList(storage.load());
+        } catch (BotzillaException e) {
+            ui.showLoadingError();
+            tasks = new TaskList();
+        }
+    }
 
-        System.out.println("____________________________________________________________");
-        System.out.println(banner);
-        System.out.println("Hello there! I'm Botzilla.");
-        System.out.println("What can I do for you on this fine day?");
-        System.out.println("____________________________________________________________");
-
-        Storage storage = new Storage(FILE_PATH);
-        ArrayList<Task> tasks = storage.load();
-
-        Scanner scanner = new Scanner(System.in);
+    public void run() {
+        ui.showWelcome();
 
         while (true) {
-            String input = scanner.nextLine();
+            String input = ui.readCommand();
+            Parser.CommandType type = Parser.parseCommandType(input);
 
             try {
-                if (input.equals("bye")) {
-                    break;
-                } else if (input.equals("list")) {
-                    System.out.println(" Here are the tasks in your list:");
-                    for (int i = 0; i < tasks.size(); i++) {
-                        System.out.println(" " + (i + 1) + "." + tasks.get(i));
+                switch (type) {
+                    case BYE:
+                        ui.showGoodbye();
+                        ui.close();
+                        return;
+                    case LIST:
+                        ui.showList(tasks);
+                        break;
+                    case MARK: {
+                        int index = Parser.parseTaskNumber(input.substring(5), tasks.size());
+                        Task task = tasks.get(index);
+                        ui.showMarkResult(task.mark());
+                        storage.save(tasks.getAll());
+                        break;
                     }
-                    System.out.println("____________________________________________________________");
-                } else if (input.startsWith("mark ")) {
-                    markTask(tasks, input.substring(5), true);
-                    storage.save(tasks);
-                    System.out.println("____________________________________________________________");
-                } else if (input.startsWith("unmark ")) {
-                    markTask(tasks, input.substring(7), false);
-                    storage.save(tasks);
-                    System.out.println("____________________________________________________________");
-                } else if (input.equals("delete") || input.startsWith("delete ")) {
-                    deleteTask(tasks, input);
-                    storage.save(tasks);
-                    System.out.println("____________________________________________________________");
-                } else if (input.equals("todo") || input.startsWith("todo ")) {
-                    tasks.add(parseTodo(input));
-                    storage.save(tasks);
-                    printAdded(tasks.get(tasks.size() - 1), tasks.size());
-                } else if (input.equals("deadline") || input.startsWith("deadline ")) {
-                    tasks.add(parseDeadline(input));
-                    storage.save(tasks);
-                    printAdded(tasks.get(tasks.size() - 1), tasks.size());
-                } else if (input.equals("event") || input.startsWith("event ")) {
-                    tasks.add(parseEvent(input));
-                    storage.save(tasks);
-                    printAdded(tasks.get(tasks.size() - 1), tasks.size());
-                } else if (input.equals("on") || input.startsWith("on ")) {
-                    onDate(tasks, input);
-                    System.out.println("____________________________________________________________");
-                } else {
-                    throw new BotzillaException("Sorry bestie I don't know what that means :(");
+                    case UNMARK: {
+                        int index = Parser.parseTaskNumber(input.substring(7), tasks.size());
+                        Task task = tasks.get(index);
+                        ui.showMarkResult(task.unmark());
+                        storage.save(tasks.getAll());
+                        break;
+                    }
+                    case DELETE: {
+                        String numberText = input.length() > 6 ? input.substring(6).trim() : "";
+                        int index = Parser.parseTaskNumber(numberText, tasks.size());
+                        Task removed = tasks.remove(index);
+                        storage.save(tasks.getAll());
+                        ui.showTaskDeleted(removed, tasks.size());
+                        break;
+                    }
+                    case ON: {
+                        java.time.LocalDate targetDate = Parser.parseOnDate(input);
+                        ui.showOnDate(targetDate, tasks.getTasksOnDate(targetDate));
+                        break;
+                    }
+                    case TODO: {
+                        Task task = Parser.parseTodo(input);
+                        tasks.add(task);
+                        storage.save(tasks.getAll());
+                        ui.showTaskAdded(task, tasks.size());
+                        break;
+                    }
+                    case DEADLINE: {
+                        Task task = Parser.parseDeadline(input);
+                        tasks.add(task);
+                        storage.save(tasks.getAll());
+                        ui.showTaskAdded(task, tasks.size());
+                        break;
+                    }
+                    case EVENT: {
+                        Task task = Parser.parseEvent(input);
+                        tasks.add(task);
+                        storage.save(tasks.getAll());
+                        ui.showTaskAdded(task, tasks.size());
+                        break;
+                    }
+                    default:
+                        throw new BotzillaException("Sorry bestie I don't know what that means :(");
                 }
             } catch (BotzillaException e) {
-                System.out.println(" HEY THERE!!! " + e.getMessage());
-                System.out.println("____________________________________________________________");
+                ui.showError(e.getMessage());
             }
         }
-
-        System.out.println("Cheers! Have a great day ahead!");
-        System.out.println("____________________________________________________________");
-
-        scanner.close();
     }
 
-    private static void printAdded(Task task, int taskCount) {
-        System.out.println(" Gotcha. I've added this task:");
-        System.out.println("   " + task);
-        System.out.println(" You have " + taskCount + " tasks in the list.");
-        System.out.println("____________________________________________________________");
-    }
-
-    private static void printDeleted(Task task, int taskCount) {
-        System.out.println(" Gotcha. I've removed this task:");
-        System.out.println("   " + task);
-        System.out.println(" You have " + taskCount + " tasks in the list.");
-    }
-
-    private static void markTask(ArrayList<Task> tasks, String numberText, boolean markAsDone) throws BotzillaException {
-        int index = parseTaskNumber(numberText, tasks.size());
-        Task task = tasks.get(index);
-        if (markAsDone) {
-            System.out.println(" " + task.mark());
-        } else {
-            System.out.println(" " + task.unmark());
-        }
-    }
-
-    private static void deleteTask(ArrayList<Task> tasks, String input) throws BotzillaException {
-        String numberText = input.length() > 6 ? input.substring(6).trim() : "";
-        int index = parseTaskNumber(numberText, tasks.size());
-        Task removed = tasks.remove(index);
-        printDeleted(removed, tasks.size());
-    }
-
-    private static void onDate(ArrayList<Task> tasks, String input) throws BotzillaException {
-        String dateText = input.length() > 2 ? input.substring(2).trim() : "";
-        if (dateText.isEmpty()) {
-            throw new BotzillaException("Please give me a date, e.g. on 2/12/2019");
-        }
-
-        Optional<LocalDateTime> parsed = DateTimeUtil.parse(dateText);
-        if (parsed.isEmpty()) {
-            throw new BotzillaException("I couldn't understand that date. Try a format like 2/12/2019.");
-        }
-        LocalDate targetDate = parsed.get().toLocalDate();
-
-        System.out.println("Hey bestie, here's what's on "
-                + targetDate.format(DateTimeFormatter.ofPattern("dd MMM yyyy")) + ":");
-
-        boolean found = false;
-        for (Task task : tasks) {
-            if (task instanceof DeadlineTask) {
-                DeadlineTask d = (DeadlineTask) task;
-                if (d.getBy() != null && d.getBy().toLocalDate().equals(targetDate)) {
-                    System.out.println(" " + task);
-                    found = true;
-                }
-            } else if (task instanceof EventTask) {
-                EventTask e = (EventTask) task;
-                if (e.getStart() != null && e.getStart().toLocalDate().equals(targetDate)) {
-                    System.out.println(" " + task);
-                    found = true;
-                }
-            }
-        }
-        if (!found) {
-            System.out.println("All clear! You are free as a lark!");
-        }
-    }
-
-    private static int parseTaskNumber(String numberText, int taskCount) throws BotzillaException {
-        int index;
-        try {
-            index = Integer.parseInt(numberText.trim()) - 1;
-        } catch (NumberFormatException e) {
-            throw new BotzillaException("Please give me a valid task number, e.g. mark 1");
-        }
-        if (index < 0 || index >= taskCount) {
-            throw new BotzillaException("I fear I don't have a task numbered " + numberText.trim() + ".");
-        }
-        return index;
-    }
-
-    private static Task parseTodo(String input) throws BotzillaException {
-        String name = input.length() > 4 ? input.substring(4).trim() : "";
-        if (name.isEmpty()) {
-            throw new BotzillaException("Please give the todo a name! Description cannot be empty");
-        }
-        return new ToDoTask(name);
-    }
-
-    private static Task parseDeadline(String input) throws BotzillaException {
-        String rest = input.length() > 8 ? input.substring(8).trim() : "";
-        String[] parts = rest.split(" /by ", 2);
-        if (parts.length < 2 || parts[0].trim().isEmpty() || parts[1].trim().isEmpty()) {
-            throw new BotzillaException("ADD A NAME, ADD A DATE! " +
-                    "A deadline needs a description and a '/by' date, e.g. deadline return book /by 13/8/2026 1800");
-        }
-        return new DeadlineTask(parts[0].trim(), parts[1].trim());
-    }
-
-    private static Task parseEvent(String input) throws BotzillaException {
-        String rest = input.length() > 5 ? input.substring(5).trim() : "";
-        String[] fromSplit = rest.split(" /from ", 2);
-        if (fromSplit.length < 2 || fromSplit[0].trim().isEmpty()) {
-            throw new BotzillaException("ERROR ALERT! An event needs a description and '/from' and '/to' times, e.g. event meeting /from 2/5/2019 1400 /to 2/5/2019 1600");
-        }
-        String[] toSplit = fromSplit[1].split(" /to ", 2);
-        if (toSplit.length < 2 || toSplit[0].trim().isEmpty() || toSplit[1].trim().isEmpty()) {
-            throw new BotzillaException("ERROR ALERT! An event needs a description and '/from' and '/to' times, e.g. event meeting /from 2/5/2019 1400 /to 2/5/2019 1600");
-        }
-        return new EventTask(fromSplit[0].trim(), toSplit[0].trim(), toSplit[1].trim());
+    public static void main(String[] args) {
+        new Botzilla("./data/botzilla.txt").run();
     }
 }
