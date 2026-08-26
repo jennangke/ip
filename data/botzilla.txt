@@ -1,0 +1,2 @@
+D | 0 | slay | tmr
+E | 0 | sleep | later | nighttime

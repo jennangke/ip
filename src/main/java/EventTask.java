@@ -12,4 +12,9 @@ public class EventTask extends Task {
     public String toString() {
         return super.toString() + " (from " + this.start + " to " + this.end + ")";
     }
+
+    @Override
+    public String toFileString() {
+        return super.toFileString() + " | " + this.start + " | " + this.end;
+    }
 }
