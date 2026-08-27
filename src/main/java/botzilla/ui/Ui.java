@@ -1,3 +1,8 @@
+package botzilla.ui;
+
+import botzilla.task.Task;
+import botzilla.task.TaskList;
+
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.Scanner;
