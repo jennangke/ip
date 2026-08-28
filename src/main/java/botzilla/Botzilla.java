@@ -8,11 +8,23 @@ import botzilla.ui.Ui;
 
 import java.time.LocalDate;
 
+/**
+ * Entry point for the Botzilla chatbot application.
+ * Wires together the Ui, Storage, Parser, and TaskList components
+ * and runs the main command loop.
+ */
 public class Botzilla {
     private Storage storage;
     private TaskList tasks;
     private Ui ui;
 
+    /**
+     * Constructs a Botzilla instance, loading any previously saved tasks
+     * from the given file path. If loading fails, starts with an empty
+     * task list and notifies the user via the Ui.
+     *
+     * @param filePath path to the file used for loading and saving tasks
+     */
     public Botzilla(String filePath) {
         ui = new Ui();
         storage = new Storage(filePath);
@@ -24,6 +36,11 @@ public class Botzilla {
         }
     }
 
+    /**
+     * Runs the main command loop: reads user input, dispatches it to the
+     * appropriate handler based on the parsed command type, and prints
+     * results or errors via the Ui. Loops until the user issues "bye".
+     */
     public void run() {
         ui.showWelcome();
 
@@ -97,6 +114,12 @@ public class Botzilla {
         }
     }
 
+    /**
+     * Starts the Botzilla application, using "./data/botzilla.txt" as the
+     * default save file location.
+     *
+     * @param args command-line arguments (unused)
+     */
     public static void main(String[] args) {
         new Botzilla("./data/botzilla.txt").run();
     }
