@@ -18,27 +18,25 @@ public class DeadlineTask extends Task {
      * deadline text as a date or date-time. Falls back to storing it
      * as raw text if parsing fails.
      *
-     * @param name display name/description of the task
-     * @param by   the deadline, e.g. "2/12/2019 1800" or free text
+     * @param name Display name/description of the task.
+     * @param by Deadline text, e.g. "2/12/2019 1800" or free text.
      */
     public DeadlineTask(String name, String by) {
         super(name, TaskType.DEADLINE);
         Optional<LocalDateTime> parsed = DateTimeUtil.parse(by);
         if (parsed.isPresent()) {
             this.by = parsed.get();
-            this.byHasTime = DateTimeUtil.hasTimeComponent(by);
-            this.byRaw = null;
+            byHasTime = DateTimeUtil.hasTimeComponent(by);
+            byRaw = null;
         } else {
             this.by = null;
-            this.byRaw = by;
+            byRaw = by;
         }
     }
 
     /**
-     * Returns a human-readable representation including the deadline,
-     * e.g. "[D][ ] return book (by: Dec 02 2019, 6:00PM)".
-     *
-     * @return the formatted task string
+     * Returns this task, including its deadline, serialized for saving
+     * to disk, with an appended "| deadline" field.
      */
     @Override
     public String toFileString() {
@@ -47,9 +45,8 @@ public class DeadlineTask extends Task {
     }
 
     /**
-     * Serializes this task, including its deadline, for saving to disk.
-     *
-     * @return the task encoded with an appended "| <deadline>" field
+     * Returns a human-readable representation including the deadline,
+     * e.g. "[D][ ] return book (by: Dec 02 2019, 6:00PM)".
      */
     @Override
     public String toString() {
@@ -60,8 +57,6 @@ public class DeadlineTask extends Task {
     /**
      * Returns the parsed deadline as a LocalDateTime, or null if the
      * original input couldn't be parsed as a date.
-     *
-     * @return the deadline, or null if unparseable
      */
     public LocalDateTime getBy() {
         return by;

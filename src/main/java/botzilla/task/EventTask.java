@@ -22,9 +22,9 @@ public class EventTask extends Task {
      * and end text as dates or date-times. Falls back to storing either
      * as raw text if parsing fails.
      *
-     * @param name  display name/description of the task
-     * @param start the event's start, e.g. "2/12/2019 1400" or free text
-     * @param end   the event's end, e.g. "2/12/2019 1600" or free text
+     * @param name Display name/description of the task.
+     * @param start Event start text, e.g. "2/12/2019 1400" or free text.
+     * @param end Event end text, e.g. "2/12/2019 1600" or free text.
      */
     public EventTask(String name, String start, String end) {
         super(name, TaskType.EVENT);
@@ -32,24 +32,23 @@ public class EventTask extends Task {
         Optional<LocalDateTime> parsedStart = DateTimeUtil.parse(start);
         if (parsedStart.isPresent()) {
             this.start = parsedStart.get();
-            this.startHasTime = DateTimeUtil.hasTimeComponent(start);
+            startHasTime = DateTimeUtil.hasTimeComponent(start);
         } else {
-            this.startRaw = start;
+            startRaw = start;
         }
 
         Optional<LocalDateTime> parsedEnd = DateTimeUtil.parse(end);
         if (parsedEnd.isPresent()) {
             this.end = parsedEnd.get();
-            this.endHasTime = DateTimeUtil.hasTimeComponent(end);
+            endHasTime = DateTimeUtil.hasTimeComponent(end);
         } else {
-            this.endRaw = end;
+            endRaw = end;
         }
     }
 
     /**
-     * Serializes this task, including its start and end, for saving to disk.
-     *
-     * @return the task encoded with appended "| <start> | <end>" fields
+     * Returns this task, including its start and end, serialized for
+     * saving to disk, with appended "| start | end" fields.
      */
     @Override
     public String toFileString() {
@@ -61,8 +60,6 @@ public class EventTask extends Task {
     /**
      * Returns a human-readable representation including the start and
      * end times, e.g. "[E][ ] meeting (from: ... to: ...)".
-     *
-     * @return the formatted task string
      */
     @Override
     public String toString() {
@@ -74,8 +71,6 @@ public class EventTask extends Task {
     /**
      * Returns the parsed start time as a LocalDateTime, or null if the
      * original input couldn't be parsed as a date.
-     *
-     * @return the start time, or null if unparseable
      */
     public LocalDateTime getStart() {
         return start;
@@ -84,8 +79,6 @@ public class EventTask extends Task {
     /**
      * Returns the parsed end time as a LocalDateTime, or null if the
      * original input couldn't be parsed as a date.
-     *
-     * @return the end time, or null if unparseable
      */
     public LocalDateTime getEnd() {
         return end;

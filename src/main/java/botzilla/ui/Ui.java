@@ -26,7 +26,7 @@ public class Ui {
      * Constructs a Ui that reads input from standard input.
      */
     public Ui() {
-        this.scanner = new Scanner(System.in);
+        scanner = new Scanner(System.in);
     }
 
     /**
