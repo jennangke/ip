@@ -52,4 +52,21 @@ public class TaskList {
         }
         return result;
     }
+
+    /**
+     * Returns all tasks whose name contains the given keyword,
+     * case-insensitively, in their original order.
+     *
+     * @param keyword Search term to match against each task's name.
+     */
+    public ArrayList<Task> findTasks(String keyword) {
+        ArrayList<Task> result = new ArrayList<>();
+        String lowerKeyword = keyword.toLowerCase();
+        for (Task task : tasks) {
+            if (task.getName().toLowerCase().contains(lowerKeyword)) {
+                result.add(task);
+            }
+        }
+        return result;
+    }
 }

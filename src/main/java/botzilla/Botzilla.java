@@ -88,6 +88,11 @@ public class Botzilla {
                         ui.showTaskAdded(task, tasks.size());
                         break;
                     }
+                    case FIND: {
+                        String keyword = Parser.parseFindKeyword(input);
+                        ui.showFindResults(tasks.findTasks(keyword));
+                        break;
+                    }
                     default:
                         throw new BotzillaException("Sorry bestie I don't know what that means :(");
                 }

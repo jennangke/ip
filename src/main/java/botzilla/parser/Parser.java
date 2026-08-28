@@ -13,7 +13,7 @@ import java.util.Optional;
 
 public class Parser {
     public enum CommandType {
-        BYE, LIST, MARK, UNMARK, DELETE, ON, TODO, DEADLINE, EVENT, UNKNOWN
+        BYE, LIST, MARK, UNMARK, DELETE, ON, FIND, TODO, DEADLINE, EVENT, UNKNOWN
     }
 
     public static CommandType parseCommandType(String input) {
@@ -35,6 +35,8 @@ public class Parser {
             return CommandType.DEADLINE;
         } else if (input.equals("event") || input.startsWith("event ")) {
             return CommandType.EVENT;
+        } else if (input.equals("find") || input.startsWith("find ")) {
+            return CommandType.FIND;
         } else {
             return CommandType.UNKNOWN;
         }
@@ -95,5 +97,20 @@ public class Parser {
             throw new BotzillaException("I couldn't understand that date. Try a format like 2/12/2019.");
         }
         return parsed.get().toLocalDate();
+    }
+
+    /**
+     * Parses a "find" command into a search keyword.
+     *
+     * @param input Raw user input, e.g. "find book".
+     * @return The trimmed keyword to search for.
+     * @throws BotzillaException If no keyword is given.
+     */
+    public static String parseFindKeyword(String input) throws BotzillaException {
+        String keyword = input.length() > 4 ? input.substring(4).trim() : "";
+        if (keyword.isEmpty()) {
+            throw new BotzillaException("Please give me a keyword to search for, e.g. find book");
+        }
+        return keyword;
     }
 }
