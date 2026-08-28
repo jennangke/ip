@@ -124,6 +124,11 @@ public class Botzilla {
                 ui.showTaskAdded(task, tasks.size());
                 return false;
             }
+            case FIND: {
+                String keyword = Parser.parseFindKeyword(input);
+                ui.showFindResults(tasks.findTasks(keyword));
+                return false;
+            }
             default:
                 throw new BotzillaException("Sorry bestie I don't know what that means :(");
         }

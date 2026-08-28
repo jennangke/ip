@@ -4,6 +4,7 @@ import botzilla.task.Task;
 import botzilla.task.TaskList;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.time.format.DateTimeFormatter;
 import java.util.Scanner;
 
@@ -137,6 +138,24 @@ public class Ui {
         } else {
             for (Task task : matches) {
                 System.out.println(" " + task);
+            }
+        }
+        System.out.println(DIVIDER);
+    }
+
+    /**
+     * Prints the tasks matching a search, or a fallback message if none
+     * are found.
+     *
+     * @param matches Tasks whose name contains the search keyword.
+     */
+    public void showFindResults(List<Task> matches) {
+        if (matches.isEmpty()) {
+            System.out.println(" No matching tasks found!");
+        } else {
+            System.out.println(" Here are the matching tasks in your list:");
+            for (int i = 0; i < matches.size(); i++) {
+                System.out.println(" " + (i + 1) + "." + matches.get(i));
             }
         }
         System.out.println(DIVIDER);

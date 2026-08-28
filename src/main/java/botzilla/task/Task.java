@@ -72,6 +72,11 @@ public abstract class Task {
         return type.getIcon() + " | " + (isDone ? "1" : "0") + " | " + this.name;
     }
 
-
+    /**
+     * Returns this task's display name/description.
+     */
+    public String getName() {
+        return name;
+    }
 }
 
