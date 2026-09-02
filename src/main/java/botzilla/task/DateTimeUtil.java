@@ -36,12 +36,14 @@ public class DateTimeUtil {
         try {
             return Optional.of(LocalDateTime.parse(trimmed, FILE_FORMAT_WITH_TIME));
         } catch (DateTimeParseException ignored) {
+            // Not in this format; fall through and try the next format
         }
 
         try {
             LocalDate date = LocalDate.parse(trimmed, FILE_FORMAT_DATE_ONLY);
             return Optional.of(date.atStartOfDay());
         } catch (DateTimeParseException ignored) {
+            // Not in this format either; caller will treat as unparseable
         }
 
         return Optional.empty();

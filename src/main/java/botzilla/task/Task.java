@@ -50,7 +50,7 @@ public abstract class Task {
      */
     @Override
     public String toString() {
-            return "[" + type.getIcon() + "][" + getTaskStatus() + "] " + this.name;
+        return "[" + type.getIcon() + "][" + getTaskStatus() + "] " + this.name;
     }
 
     /**
@@ -66,7 +66,7 @@ public abstract class Task {
      * Serializes this task into the pipe-delimited format used for saving
      * to disk. Subclasses append their own extra fields to this base string.
      *
-     * @return the task encoded as "<type icon> | <done flag> | <name>"
+     * @return the task encoded as "type icon | done flag | name"
      */
     public String toFileString() {
         return type.getIcon() + " | " + (isDone ? "1" : "0") + " | " + this.name;

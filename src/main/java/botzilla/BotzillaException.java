@@ -5,7 +5,7 @@ package botzilla;
  * failure during command processing (e.g. malformed dates, missing
  * task descriptions, or an unrecognized command).
  */
-public class BotzillaException extends Exception{
+public class BotzillaException extends Exception {
 
     /**
      * Constructs a BotzillaException with the given user-facing message.
