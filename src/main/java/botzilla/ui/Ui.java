@@ -1,12 +1,12 @@
 package botzilla.ui;
 
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.util.List;
+import java.util.Scanner;
+
 import botzilla.task.Task;
 import botzilla.task.TaskList;
-
-import java.time.LocalDate;
-import java.util.List;
-import java.time.format.DateTimeFormatter;
-import java.util.Scanner;
 
 /**
  * Handles all console input and output for the chatbot: reading user
@@ -15,11 +15,11 @@ import java.util.Scanner;
 public class Ui {
     private static final String DIVIDER = "____________________________________________________________";
     private static final String BANNER =
-            "    ____        __        _ ____     \n" +
-                    "   / __ )____  / /_____  (_) / /___ _\n" +
-                    "  / __  / __ \\/ __/_  / / / / / __ `/\n" +
-                    " / /_/ / /_/ / /_  / /_/ / / / /_/ / \n" +
-                    "/_____/\\____/\\__/ /___/_/_/_/\\__,_/  \n";
+            "    ____        __        _ ____     \n"
+                    + "   / __ )____  / /_____  (_) / /___ _\n"
+                    + "  / __  / __ \\/ __/_  / / / / / __ `/\n"
+                    + " / /_/ / /_/ / /_  / /_/ / / / /_/ / \n"
+                    + "/_____/\\____/\\__/ /___/_/_/_/\\__,_/  \n";
 
     private Scanner scanner;
 
@@ -61,7 +61,8 @@ public class Ui {
      * Prints an error message for an invalid or unrecognized command.
      *
      * @param message the error description
-     */public void showError(String message) {
+     */
+    public void showError(String message) {
         System.out.println(" HEY THERE!!! " + message);
         System.out.println(DIVIDER);
     }
