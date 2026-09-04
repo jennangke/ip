@@ -36,34 +36,25 @@ public class Ui {
     public void showWelcome() {
         System.out.println(DIVIDER);
         System.out.println(BANNER);
-        System.out.println("Hello there! I'm Botzilla.");
-        System.out.println("What can I do for you on this fine day?");
+        System.out.println(formatGreeting());
         System.out.println(DIVIDER);
     }
 
     /**
-     * Prints the goodbye message shown when the user exits.
+     * Formats the greeting shown when the chatbot starts up. Used by the
+     * GUI to display an opening message, without the ASCII banner that
+     * only makes sense in a console.
+     *
+     * @return the greeting message
      */
-    public void showGoodbye() {
-        System.out.println("Cheers! Have a great day ahead!");
-        System.out.println(DIVIDER);
+    public String formatGreeting() {
+        return "Hello there! I'm Botzilla.\nWhat can I do for you on this fine day?";
     }
-
 
     /**
      * Prints a plain divider line, used to separate sections of output.
      */
     public void showLine() {
-        System.out.println(DIVIDER);
-    }
-
-    /**
-     * Prints an error message for an invalid or unrecognized command.
-     *
-     * @param message the error description
-     */
-    public void showError(String message) {
-        System.out.println(" HEY THERE!!! " + message);
         System.out.println(DIVIDER);
     }
 
@@ -76,90 +67,113 @@ public class Ui {
     }
 
     /**
-     * Prints a confirmation after a task has been added.
+     * Formats the goodbye message shown when the user exits. Used both by
+     * the console (which prints it) and the GUI (which displays it in a
+     * dialog box).
+     *
+     * @return the goodbye message
+     */
+    public String formatGoodbye() {
+        return "Cheers! Have a great day ahead!";
+    }
+
+    /**
+     * Formats an error message for an invalid or unrecognized command.
+     *
+     * @param message the error description
+     * @return the formatted error message
+     */
+    public String formatError(String message) {
+        return " HEY THERE!!! " + message;
+    }
+
+    /**
+     * Formats a confirmation after a task has been added.
      *
      * @param task      the task that was added
      * @param taskCount the total number of tasks after adding
+     * @return the formatted confirmation message
      */
-    public void showTaskAdded(Task task, int taskCount) {
-        System.out.println(" Gotcha. I've added this task:");
-        System.out.println("   " + task);
-        System.out.println(" You have " + taskCount + " tasks in the list.");
-        System.out.println(DIVIDER);
+    public String formatTaskAdded(Task task, int taskCount) {
+        return " Gotcha. I've added this task:\n"
+                + "   " + task + "\n"
+                + " You have " + taskCount + " tasks in the list.";
     }
 
     /**
-     * Prints a confirmation after a task has been deleted.
+     * Formats a confirmation after a task has been deleted.
      *
      * @param task      the task that was removed
      * @param taskCount the total number of tasks after removal
+     * @return the formatted confirmation message
      */
-    public void showTaskDeleted(Task task, int taskCount) {
-        System.out.println(" Gotcha. I've removed this task:");
-        System.out.println("   " + task);
-        System.out.println(" You have " + taskCount + " tasks in the list.");
-        System.out.println(DIVIDER);
+    public String formatTaskDeleted(Task task, int taskCount) {
+        return " Gotcha. I've removed this task:\n"
+                + "   " + task + "\n"
+                + " You have " + taskCount + " tasks in the list.";
     }
 
     /**
-     * Prints the result of a mark/unmark operation.
+     * Formats the result of a mark/unmark operation.
      *
      * @param message the confirmation message returned by the task
+     * @return the formatted confirmation message
      */
-    public void showMarkResult(String message) {
-        System.out.println(" " + message);
-        System.out.println(DIVIDER);
+    public String formatMarkResult(String message) {
+        return " " + message;
     }
 
     /**
-     * Prints the full list of tasks, numbered from 1.
+     * Formats the full list of tasks, numbered from 1.
      *
      * @param tasks the task list to display
+     * @return the formatted task list
      */
-    public void showList(TaskList tasks) {
-        System.out.println(" Here are the tasks in your list:");
+    public String formatList(TaskList tasks) {
+        StringBuilder sb = new StringBuilder(" Here are the tasks in your list:");
         for (int i = 0; i < tasks.size(); i++) {
-            System.out.println(" " + (i + 1) + "." + tasks.get(i));
+            sb.append("\n ").append(i + 1).append(".").append(tasks.get(i));
         }
-        System.out.println(DIVIDER);
+        return sb.toString();
     }
 
     /**
-     * Prints the deadlines/events occurring on a given date, or a
+     * Formats the deadlines/events occurring on a given date, or a
      * fallback message if none are found.
      *
      * @param date    the queried date
      * @param matches the tasks occurring on that date
+     * @return the formatted results
      */
-    public void showOnDate(LocalDate date, java.util.List<Task> matches) {
-        System.out.println(" Okay bestie, here's what's on "
+    public String formatOnDate(LocalDate date, List<Task> matches) {
+        StringBuilder sb = new StringBuilder(" Okay bestie, here's what's on "
                 + date.format(DateTimeFormatter.ofPattern("dd MMM yyyy")) + ":");
         if (matches.isEmpty()) {
-            System.out.println(" All clear! You are free as a lark!");
+            sb.append("\n All clear! You are free as a lark!");
         } else {
             for (Task task : matches) {
-                System.out.println(" " + task);
+                sb.append("\n ").append(task);
             }
         }
-        System.out.println(DIVIDER);
+        return sb.toString();
     }
 
     /**
-     * Prints the tasks matching a search, or a fallback message if none
+     * Formats the tasks matching a search, or a fallback message if none
      * are found.
      *
      * @param matches Tasks whose name contains the search keyword.
+     * @return the formatted results
      */
-    public void showFindResults(List<Task> matches) {
+    public String formatFindResults(List<Task> matches) {
         if (matches.isEmpty()) {
-            System.out.println(" No matching tasks found!");
-        } else {
-            System.out.println(" Here are the matching tasks in your list:");
-            for (int i = 0; i < matches.size(); i++) {
-                System.out.println(" " + (i + 1) + "." + matches.get(i));
-            }
+            return " No matching tasks found!";
         }
-        System.out.println(DIVIDER);
+        StringBuilder sb = new StringBuilder(" Here are the matching tasks in your list:");
+        for (int i = 0; i < matches.size(); i++) {
+            sb.append("\n ").append(i + 1).append(".").append(matches.get(i));
+        }
+        return sb.toString();
     }
 
     /**
