@@ -44,6 +44,13 @@ public class EventTask extends Task {
         } else {
             endRaw = end;
         }
+
+        assert (this.start != null) != (startRaw != null)
+                : "exactly one of start/startRaw should be set after construction, so toString()/"
+                + "toFileString() always have a value to display";
+        assert (this.end != null) != (endRaw != null)
+                : "exactly one of end/endRaw should be set after construction, so toString()/toFileString() "
+                + "always have a value to display";
     }
 
     /**
