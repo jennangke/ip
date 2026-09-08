@@ -115,21 +115,23 @@ public class Botzilla {
             case LIST:
                 return ui.formatList(tasks);
             case MARK: {
-                int index = Parser.parseTaskNumber(input.substring(5), tasks.size());
+                int index = Parser.parseTaskNumber(input.substring(Parser.markKeywordLength()), tasks.size());
                 Task task = tasks.get(index);
                 String result = ui.formatMarkResult(task.mark());
                 storage.save(tasks.getAll());
                 return result;
             }
             case UNMARK: {
-                int index = Parser.parseTaskNumber(input.substring(7), tasks.size());
+                int index = Parser.parseTaskNumber(input.substring(Parser.unmarkKeywordLength()), tasks.size());
                 Task task = tasks.get(index);
                 String result = ui.formatMarkResult(task.unmark());
                 storage.save(tasks.getAll());
                 return result;
             }
             case DELETE: {
-                String numberText = input.length() > 6 ? input.substring(6).trim() : "";
+                int deleteKeywordLength = Parser.deleteKeywordLength();
+                String numberText = input.length() > deleteKeywordLength
+                        ? input.substring(deleteKeywordLength).trim() : "";
                 int index = Parser.parseTaskNumber(numberText, tasks.size());
                 Task removed = tasks.remove(index);
                 storage.save(tasks.getAll());
