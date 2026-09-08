@@ -45,6 +45,9 @@ public class TaskList {
      * @return the removed task
      */
     public Task remove(int index) {
+        assert index >= 0 && index < tasks.size()
+                : "index should already have been validated (e.g. by Parser.parseTaskNumber) before reaching "
+                + "TaskList; an out-of-range index here indicates a bug in the caller, not bad user input";
         return tasks.remove(index);
     }
 
@@ -55,6 +58,9 @@ public class TaskList {
      * @return the task at that index
      */
     public Task get(int index) {
+        assert index >= 0 && index < tasks.size()
+                : "index should already have been validated (e.g. by Parser.parseTaskNumber) before reaching "
+                + "TaskList; an out-of-range index here indicates a bug in the caller, not bad user input";
         return tasks.get(index);
     }
 
@@ -85,6 +91,8 @@ public class TaskList {
      * @return a list of matching tasks, in their original order
      */
     public ArrayList<Task> getTasksOnDate(LocalDate date) {
+        assert date != null : "date should never be null; Parser.parseOnDate always returns a parsed date "
+                + "or throws BotzillaException before this is called";
         ArrayList<Task> result = new ArrayList<>();
         for (Task task : tasks) {
             if (task.getDate().equals(Optional.of(date))) {
