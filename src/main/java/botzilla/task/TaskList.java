@@ -3,6 +3,7 @@ package botzilla.task;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Optional;
 
 /**
  * Wraps a list of tasks and provides operations to add, remove, and
@@ -94,16 +95,8 @@ public class TaskList {
                 + "or throws BotzillaException before this is called";
         ArrayList<Task> result = new ArrayList<>();
         for (Task task : tasks) {
-            if (task instanceof DeadlineTask) {
-                DeadlineTask d = (DeadlineTask) task;
-                if (d.getBy() != null && d.getBy().toLocalDate().equals(date)) {
-                    result.add(task);
-                }
-            } else if (task instanceof EventTask) {
-                EventTask e = (EventTask) task;
-                if (e.getStart() != null && e.getStart().toLocalDate().equals(date)) {
-                    result.add(task);
-                }
+            if (task.getDate().equals(Optional.of(date))) {
+                result.add(task);
             }
         }
         return result;
