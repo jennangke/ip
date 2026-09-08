@@ -3,6 +3,7 @@ package botzilla.task;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.stream.Collectors;
 
 /**
  * Wraps a list of tasks and provides operations to add, remove, and
@@ -84,21 +85,25 @@ public class TaskList {
      * @return a list of matching tasks, in their original order
      */
     public ArrayList<Task> getTasksOnDate(LocalDate date) {
-        ArrayList<Task> result = new ArrayList<>();
-        for (Task task : tasks) {
-            if (task instanceof DeadlineTask) {
-                DeadlineTask d = (DeadlineTask) task;
-                if (d.getBy() != null && d.getBy().toLocalDate().equals(date)) {
-                    result.add(task);
-                }
-            } else if (task instanceof EventTask) {
-                EventTask e = (EventTask) task;
-                if (e.getStart() != null && e.getStart().toLocalDate().equals(date)) {
-                    result.add(task);
-                }
-            }
-        }
-        return result;
+        return tasks.stream()
+                .filter(task -> date.equals(dateOf(task)))
+                .collect(Collectors.toCollection(ArrayList::new));
+    }
+
+    /**
+     * Extracts the calendar date a task falls on, for deadline/event
+     * tasks with a successfully parsed date. Returns null for todos and
+     * for tasks whose date couldn't be parsed (stored as raw text).
+     *
+     * @param task the task to extract a date from
+     * @return the task's date, or null if it has none
+     */
+    private static LocalDate dateOf(Task task) {
+        return switch (task) {
+            case DeadlineTask d -> d.getBy() != null ? d.getBy().toLocalDate() : null;
+            case EventTask e -> e.getStart() != null ? e.getStart().toLocalDate() : null;
+            default -> null;
+        };
     }
 
     /**
@@ -108,13 +113,9 @@ public class TaskList {
      * @param keyword Search term to match against each task's name.
      */
     public ArrayList<Task> findTasks(String keyword) {
-        ArrayList<Task> result = new ArrayList<>();
         String lowerKeyword = keyword.toLowerCase();
-        for (Task task : tasks) {
-            if (task.getName().toLowerCase().contains(lowerKeyword)) {
-                result.add(task);
-            }
-        }
-        return result;
+        return tasks.stream()
+                .filter(task -> task.getName().toLowerCase().contains(lowerKeyword))
+                .collect(Collectors.toCollection(ArrayList::new));
     }
 }
