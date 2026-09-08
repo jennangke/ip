@@ -1,6 +1,8 @@
 package botzilla.task;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Optional;
 
 /**
  * Represents a task that must be completed by a specific date/time,
@@ -47,5 +49,14 @@ public class DeadlineTask extends Task {
      */
     public LocalDateTime getBy() {
         return by.toDateTimeOrNull();
+    }
+
+    /**
+     * Returns the calendar date of this deadline, or empty if the
+     * original input couldn't be parsed as a date.
+     */
+    @Override
+    public Optional<LocalDate> getDate() {
+        return Optional.ofNullable(getBy()).map(LocalDateTime::toLocalDate);
     }
 }

@@ -1,6 +1,8 @@
 package botzilla.task;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Optional;
 
 /**
  * Represents a task that occurs over a specific time range,
@@ -59,5 +61,14 @@ public class EventTask extends Task {
      */
     public LocalDateTime getEnd() {
         return end.toDateTimeOrNull();
+    }
+
+    /**
+     * Returns the calendar date this event starts on, or empty if the
+     * original input couldn't be parsed as a date.
+     */
+    @Override
+    public Optional<LocalDate> getDate() {
+        return Optional.ofNullable(getStart()).map(LocalDateTime::toLocalDate);
     }
 }
