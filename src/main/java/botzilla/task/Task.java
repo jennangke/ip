@@ -1,5 +1,8 @@
 package botzilla.task;
 
+import java.time.LocalDate;
+import java.util.Optional;
+
 /**
  * Represents a single task in the task list. Holds the task's name,
  * completion status, and type. Subclasses (ToDoTask, DeadlineTask,
@@ -80,6 +83,18 @@ public abstract class Task {
      */
     public String getName() {
         return name;
+    }
+
+    /**
+     * Returns the calendar date associated with this task, if any. A plain
+     * ToDoTask has no date and returns empty; DeadlineTask and EventTask
+     * override this to return their deadline or start date respectively,
+     * when it could be parsed.
+     *
+     * @return the task's date, or empty if it has none.
+     */
+    public Optional<LocalDate> getDate() {
+        return Optional.empty();
     }
 }
 

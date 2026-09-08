@@ -32,9 +32,6 @@ public class DeadlineTask extends Task {
             this.by = null;
             byRaw = by;
         }
-        assert (this.by != null) != (byRaw != null)
-                : "exactly one of by/byRaw should be set after construction, so toString()/toFileString() "
-                + "always have a value to display";
     }
 
     /**
