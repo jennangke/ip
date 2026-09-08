@@ -1,5 +1,6 @@
 package botzilla.task;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Optional;
 
@@ -9,9 +10,7 @@ import java.util.Optional;
  * be parsed, it is stored and displayed as plain text instead.
  */
 public class DeadlineTask extends Task {
-    private LocalDateTime by;
-    private String byRaw;
-    private boolean byHasTime;
+    private final FlexibleDateTime by;
 
     /**
      * Constructs a new DeadlineTask, attempting to parse the given
@@ -23,15 +22,7 @@ public class DeadlineTask extends Task {
      */
     public DeadlineTask(String name, String by) {
         super(name, TaskType.DEADLINE);
-        Optional<LocalDateTime> parsed = DateTimeUtil.parse(by);
-        if (parsed.isPresent()) {
-            this.by = parsed.get();
-            byHasTime = DateTimeUtil.hasTimeComponent(by);
-            byRaw = null;
-        } else {
-            this.by = null;
-            byRaw = by;
-        }
+        this.by = FlexibleDateTime.parse(by);
     }
 
     /**
@@ -40,8 +31,7 @@ public class DeadlineTask extends Task {
      */
     @Override
     public String toFileString() {
-        String byText = (by != null) ? DateTimeUtil.formatForFile(by, byHasTime) : byRaw;
-        return super.toFileString() + " | " + byText;
+        return super.toFileString() + " | " + by.toFileString();
     }
 
     /**
@@ -50,8 +40,7 @@ public class DeadlineTask extends Task {
      */
     @Override
     public String toString() {
-        String displayBy = (by != null) ? DateTimeUtil.formatForDisplay(by, byHasTime) : byRaw;
-        return super.toString() + " (by: " + displayBy + ")";
+        return super.toString() + " (by: " + by.toDisplayString() + ")";
     }
 
     /**
@@ -59,6 +48,15 @@ public class DeadlineTask extends Task {
      * original input couldn't be parsed as a date.
      */
     public LocalDateTime getBy() {
-        return by;
+        return by.toDateTimeOrNull();
+    }
+
+    /**
+     * Returns the calendar date of this deadline, or empty if the
+     * original input couldn't be parsed as a date.
+     */
+    @Override
+    public Optional<LocalDate> getDate() {
+        return Optional.ofNullable(getBy()).map(LocalDateTime::toLocalDate);
     }
 }
