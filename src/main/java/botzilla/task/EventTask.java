@@ -1,7 +1,6 @@
 package botzilla.task;
 
 import java.time.LocalDateTime;
-import java.util.Optional;
 
 /**
  * Represents a task that occurs over a specific time range,
@@ -10,12 +9,8 @@ import java.util.Optional;
  * plain text instead.
  */
 public class EventTask extends Task {
-    private LocalDateTime start;
-    private LocalDateTime end;
-    private String startRaw;
-    private String endRaw;
-    private boolean startHasTime;
-    private boolean endHasTime;
+    private final FlexibleDateTime start;
+    private final FlexibleDateTime end;
 
     /**
      * Constructs a new EventTask, attempting to parse the given start
@@ -28,22 +23,8 @@ public class EventTask extends Task {
      */
     public EventTask(String name, String start, String end) {
         super(name, TaskType.EVENT);
-
-        Optional<LocalDateTime> parsedStart = DateTimeUtil.parse(start);
-        if (parsedStart.isPresent()) {
-            this.start = parsedStart.get();
-            startHasTime = DateTimeUtil.hasTimeComponent(start);
-        } else {
-            startRaw = start;
-        }
-
-        Optional<LocalDateTime> parsedEnd = DateTimeUtil.parse(end);
-        if (parsedEnd.isPresent()) {
-            this.end = parsedEnd.get();
-            endHasTime = DateTimeUtil.hasTimeComponent(end);
-        } else {
-            endRaw = end;
-        }
+        this.start = FlexibleDateTime.parse(start);
+        this.end = FlexibleDateTime.parse(end);
     }
 
     /**
@@ -52,9 +33,7 @@ public class EventTask extends Task {
      */
     @Override
     public String toFileString() {
-        String startText = (start != null) ? DateTimeUtil.formatForFile(start, startHasTime) : startRaw;
-        String endText = (end != null) ? DateTimeUtil.formatForFile(end, endHasTime) : endRaw;
-        return super.toFileString() + " | " + startText + " | " + endText;
+        return super.toFileString() + " | " + start.toFileString() + " | " + end.toFileString();
     }
 
     /**
@@ -63,9 +42,7 @@ public class EventTask extends Task {
      */
     @Override
     public String toString() {
-        String displayStart = (start != null) ? DateTimeUtil.formatForDisplay(start, startHasTime) : startRaw;
-        String displayEnd = (end != null) ? DateTimeUtil.formatForDisplay(end, endHasTime) : endRaw;
-        return super.toString() + " (from: " + displayStart + " to: " + displayEnd + ")";
+        return super.toString() + " (from: " + start.toDisplayString() + " to: " + end.toDisplayString() + ")";
     }
 
     /**
@@ -73,7 +50,7 @@ public class EventTask extends Task {
      * original input couldn't be parsed as a date.
      */
     public LocalDateTime getStart() {
-        return start;
+        return start.toDateTimeOrNull();
     }
 
     /**
@@ -81,6 +58,6 @@ public class EventTask extends Task {
      * original input couldn't be parsed as a date.
      */
     public LocalDateTime getEnd() {
-        return end;
+        return end.toDateTimeOrNull();
     }
 }
