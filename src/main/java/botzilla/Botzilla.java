@@ -114,20 +114,10 @@ public class Botzilla {
                 return ui.formatGoodbye();
             case LIST:
                 return ui.formatList(tasks);
-            case MARK: {
-                int index = Parser.parseTaskNumber(input.substring(Parser.markKeywordLength()), tasks.size());
-                Task task = tasks.get(index);
-                String result = ui.formatMarkResult(task.mark());
-                storage.save(tasks.getAll());
-                return result;
-            }
-            case UNMARK: {
-                int index = Parser.parseTaskNumber(input.substring(Parser.unmarkKeywordLength()), tasks.size());
-                Task task = tasks.get(index);
-                String result = ui.formatMarkResult(task.unmark());
-                storage.save(tasks.getAll());
-                return result;
-            }
+            case MARK:
+                return markTask(input, Parser.markKeywordLength(), true);
+            case UNMARK:
+                return markTask(input, Parser.unmarkKeywordLength(), false);
             case DELETE: {
                 int deleteKeywordLength = Parser.deleteKeywordLength();
                 String numberText = input.length() > deleteKeywordLength
@@ -141,24 +131,12 @@ public class Botzilla {
                 LocalDate targetDate = Parser.parseOnDate(input);
                 return ui.formatOnDate(targetDate, tasks.getTasksOnDate(targetDate));
             }
-            case TODO: {
-                Task task = Parser.parseTodo(input);
-                tasks.add(task);
-                storage.save(tasks.getAll());
-                return ui.formatTaskAdded(task, tasks.size());
-            }
-            case DEADLINE: {
-                Task task = Parser.parseDeadline(input);
-                tasks.add(task);
-                storage.save(tasks.getAll());
-                return ui.formatTaskAdded(task, tasks.size());
-            }
-            case EVENT: {
-                Task task = Parser.parseEvent(input);
-                tasks.add(task);
-                storage.save(tasks.getAll());
-                return ui.formatTaskAdded(task, tasks.size());
-            }
+            case TODO:
+                return addTask(Parser.parseTodo(input));
+            case DEADLINE:
+                return addTask(Parser.parseDeadline(input));
+            case EVENT:
+                return addTask(Parser.parseEvent(input));
             case FIND: {
                 String keyword = Parser.parseFindKeyword(input);
                 return ui.formatFindResults(tasks.findTasks(keyword));
@@ -166,6 +144,41 @@ public class Botzilla {
             default:
                 throw new BotzillaException("Sorry bestie I don't know what that means :(");
         }
+    }
+
+    /**
+     * Adds a newly parsed task to the list, persists the updated list to
+     * disk, and returns the confirmation message to display. Shared by the
+     * TODO, DEADLINE, and EVENT commands, which differ only in how the
+     * task itself is parsed.
+     *
+     * @param task the task to add.
+     * @return the formatted confirmation message.
+     */
+    private String addTask(Task task) {
+        tasks.add(task);
+        storage.save(tasks.getAll());
+        return ui.formatTaskAdded(task, tasks.size());
+    }
+
+    /**
+     * Marks or unmarks the task referenced by a "mark"/"unmark" command,
+     * persists the updated list to disk, and returns the confirmation
+     * message to display. Shared by the MARK and UNMARK commands, which
+     * differ only in their keyword length and the direction of the mark.
+     *
+     * @param input         raw user input, starting with the "mark "/"unmark " keyword.
+     * @param keywordLength length of the leading keyword, to strip before parsing the task number.
+     * @param markAsDone    true to mark the task as done, false to unmark it.
+     * @return the formatted confirmation message.
+     * @throws BotzillaException if the task number is missing, invalid, or out of range.
+     */
+    private String markTask(String input, int keywordLength, boolean markAsDone) throws BotzillaException {
+        int index = Parser.parseTaskNumber(input.substring(keywordLength), tasks.size());
+        Task task = tasks.get(index);
+        String result = ui.formatMarkResult(markAsDone ? task.mark() : task.unmark());
+        storage.save(tasks.getAll());
+        return result;
     }
 
     /**
