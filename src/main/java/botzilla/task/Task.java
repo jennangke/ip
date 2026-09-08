@@ -17,6 +17,9 @@ public abstract class Task {
      * @param type the task's type (todo, deadline, or event)
      */
     public Task(String name, TaskType type) {
+        assert name != null && !name.trim().isEmpty()
+                : "Task name should never be null or blank; callers (e.g. Parser) must reject empty "
+                + "descriptions before constructing a Task";
         this.name = name;
         this.isDone = false;
         this.type = type;

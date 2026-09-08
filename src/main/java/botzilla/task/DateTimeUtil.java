@@ -58,6 +58,9 @@ public class DateTimeUtil {
      * @return true if the text matches the "with time" format
      */
     public static boolean hasTimeComponent(String text) {
+        assert parse(text).isPresent()
+                : "text should already be parseable by parse(), as documented in this method's precondition; "
+                + "callers must not invoke this on text that failed to parse";
         try {
             LocalDateTime.parse(text.trim(), FILE_FORMAT_WITH_TIME);
             return true;
