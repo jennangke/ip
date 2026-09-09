@@ -35,16 +35,17 @@ public class EventTask extends Task {
      */
     @Override
     public String toFileString() {
-        return super.toFileString() + " | " + start.toFileString() + " | " + end.toFileString();
+        return super.toFileString() + " | " + start.toFileString() + " | " + end.toFileString() + tagsFileSuffix();
     }
 
     /**
      * Returns a human-readable representation including the start and
-     * end times, e.g. "[E][ ] meeting (from: ... to: ...)".
+     * end times and any tags, e.g. "[E][ ] meeting (from: ... to: ...) #fun".
      */
     @Override
     public String toString() {
-        return super.toString() + " (from: " + start.toDisplayString() + " to: " + end.toDisplayString() + ")";
+        return super.toString() + " (from: " + start.toDisplayString() + " to: " + end.toDisplayString() + ")"
+                + tagsDisplaySuffix();
     }
 
     /**

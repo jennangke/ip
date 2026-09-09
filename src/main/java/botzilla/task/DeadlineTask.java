@@ -31,16 +31,16 @@ public class DeadlineTask extends Task {
      */
     @Override
     public String toFileString() {
-        return super.toFileString() + " | " + by.toFileString();
+        return super.toFileString() + " | " + by.toFileString() + tagsFileSuffix();
     }
 
     /**
-     * Returns a human-readable representation including the deadline,
-     * e.g. "[D][ ] return book (by: Dec 02 2019, 6:00PM)".
+     * Returns a human-readable representation including the deadline and
+     * any tags, e.g. "[D][ ] return book (by: Dec 02 2019, 6:00PM) #fun".
      */
     @Override
     public String toString() {
-        return super.toString() + " (by: " + by.toDisplayString() + ")";
+        return super.toString() + " (by: " + by.toDisplayString() + ")" + tagsDisplaySuffix();
     }
 
     /**

@@ -2,7 +2,12 @@ package botzilla.parser;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import botzilla.BotzillaException;
 import botzilla.task.DateTimeUtil;
@@ -21,7 +26,7 @@ public class Parser {
      * The recognised kinds of user commands.
      */
     public enum CommandType {
-        BYE, LIST, MARK, UNMARK, DELETE, ON, FIND, TODO, DEADLINE, EVENT, UNKNOWN
+        BYE, LIST, MARK, UNMARK, DELETE, ON, FIND, TODO, DEADLINE, EVENT, TAG, UNTAG, UNKNOWN
     }
 
     // Command keywords, defined once and reused for both command detection
@@ -38,6 +43,13 @@ public class Parser {
     private static final String CMD_DEADLINE = "deadline";
     private static final String CMD_EVENT = "event";
     private static final String CMD_FIND = "find";
+    private static final String CMD_TAG = "tag ";
+    private static final String CMD_UNTAG = "untag ";
+
+    // Matches inline "#tag" tokens embedded in a task description, e.g.
+    // "read book #fun". Used to let users tag a task at creation time,
+    // as an alternative to the dedicated "tag"/"untag" commands.
+    private static final Pattern INLINE_TAG_PATTERN = Pattern.compile("#(\\w+)");
 
     /**
      * Determines which command the given input represents, based on its
@@ -67,6 +79,10 @@ public class Parser {
             return CommandType.EVENT;
         } else if (input.equals(CMD_FIND) || input.startsWith(CMD_FIND + " ")) {
             return CommandType.FIND;
+        } else if (input.startsWith(CMD_TAG)) {
+            return CommandType.TAG;
+        } else if (input.startsWith(CMD_UNTAG)) {
+            return CommandType.UNTAG;
         } else {
             return CommandType.UNKNOWN;
         }
@@ -103,6 +119,26 @@ public class Parser {
     }
 
     /**
+     * Returns the length of the "tag " keyword, for callers that need to
+     * strip it from raw input before extracting the task number/tag arguments.
+     *
+     * @return the length of the "tag " command keyword, including its trailing space
+     */
+    public static int tagKeywordLength() {
+        return CMD_TAG.length();
+    }
+
+    /**
+     * Returns the length of the "untag " keyword, for callers that need to
+     * strip it from raw input before extracting the task number/tag arguments.
+     *
+     * @return the length of the "untag " command keyword, including its trailing space
+     */
+    public static int untagKeywordLength() {
+        return CMD_UNTAG.length();
+    }
+
+    /**
      * Parses a 1-based task number from user input, validating that it
      * is numeric and refers to an existing task.
      *
@@ -133,11 +169,14 @@ public class Parser {
      * @throws BotzillaException if the description is empty
      */
     public static Task parseTodo(String input) throws BotzillaException {
-        String name = input.length() > CMD_TODO.length() ? input.substring(CMD_TODO.length()).trim() : "";
-        if (name.isEmpty()) {
+        String rest = input.length() > CMD_TODO.length() ? input.substring(CMD_TODO.length()).trim() : "";
+        InlineTags extracted = extractInlineTags(rest);
+        if (extracted.text().isEmpty()) {
             throw new BotzillaException("Please give the todo a name! Description cannot be empty");
         }
-        return new ToDoTask(name);
+        Task task = new ToDoTask(extracted.text());
+        extracted.tags().forEach(task::addTag);
+        return task;
     }
 
     /**
@@ -149,12 +188,15 @@ public class Parser {
      */
     public static Task parseDeadline(String input) throws BotzillaException {
         String rest = input.length() > CMD_DEADLINE.length() ? input.substring(CMD_DEADLINE.length()).trim() : "";
-        String[] parts = rest.split(" /by ", 2);
+        InlineTags extracted = extractInlineTags(rest);
+        String[] parts = extracted.text().split(" /by ", 2);
         if (parts.length < 2 || parts[0].trim().isEmpty() || parts[1].trim().isEmpty()) {
             throw new BotzillaException("ADD A NAME, ADD A DATE! A deadline needs a description and a '/by' "
                     + "date, e.g. deadline return book /by 2/12/2019 1800");
         }
-        return new DeadlineTask(parts[0].trim(), parts[1].trim());
+        Task task = new DeadlineTask(parts[0].trim(), parts[1].trim());
+        extracted.tags().forEach(task::addTag);
+        return task;
     }
 
     /**
@@ -166,7 +208,8 @@ public class Parser {
      */
     public static Task parseEvent(String input) throws BotzillaException {
         String rest = input.length() > CMD_EVENT.length() ? input.substring(CMD_EVENT.length()).trim() : "";
-        String[] fromSplit = rest.split(" /from ", 2);
+        InlineTags extracted = extractInlineTags(rest);
+        String[] fromSplit = extracted.text().split(" /from ", 2);
         if (fromSplit.length < 2 || fromSplit[0].trim().isEmpty()) {
             throw new BotzillaException("ERROR ALERT! An event needs a description and '/from' and '/to' "
                     + "times, e.g. event meeting /from 2/12/2019 1400 /to 2/12/2019 1600");
@@ -176,7 +219,9 @@ public class Parser {
             throw new BotzillaException("ERROR ALERT! An event needs a description and '/from' and '/to' "
                     + "times, e.g. event meeting /from 2/12/2019 1400 /to 2/12/2019 1600");
         }
-        return new EventTask(fromSplit[0].trim(), toSplit[0].trim(), toSplit[1].trim());
+        Task task = new EventTask(fromSplit[0].trim(), toSplit[0].trim(), toSplit[1].trim());
+        extracted.tags().forEach(task::addTag);
+        return task;
     }
 
     /**
@@ -212,5 +257,67 @@ public class Parser {
             throw new BotzillaException("Please give me a keyword to search for, e.g. find book");
         }
         return keyword;
+    }
+
+    /**
+     * Parses a "tag"/"untag" command into the target task index and the
+     * tag name(s) to add/remove, e.g. "2 fun urgent" targets task 2 with
+     * tags "fun" and "urgent". Tags may be written with or without a
+     * leading '#'.
+     *
+     * @param input         raw user input, starting with the "tag "/"untag " keyword
+     * @param keywordLength length of the leading keyword, to strip before parsing
+     * @param taskCount     current number of tasks, for bounds checking
+     * @return the parsed task index and tag names
+     * @throws BotzillaException if the task number is missing/invalid or no tag name is given
+     */
+    public static TagCommand parseTagCommand(String input, int keywordLength, int taskCount)
+            throws BotzillaException {
+        String rest = input.length() > keywordLength ? input.substring(keywordLength).trim() : "";
+        String[] tokens = rest.split("\\s+", 2);
+        if (tokens.length < 2 || tokens[1].isBlank()) {
+            throw new BotzillaException("Please give me a task number and at least one tag, e.g. tag 2 fun");
+        }
+        int index = parseTaskNumber(tokens[0], taskCount);
+        List<String> tagNames = Arrays.asList(tokens[1].trim().split("\\s+"));
+        return new TagCommand(index, tagNames);
+    }
+
+    /**
+     * The parsed result of a "tag"/"untag" command: the target task index
+     * and the tag name(s) to apply.
+     *
+     * @param index    zero-based index of the target task
+     * @param tagNames the tag name(s) to add/remove, in the order given
+     */
+    public record TagCommand(int index, List<String> tagNames) {
+    }
+
+    /**
+     * The result of extracting inline "#tag" tokens from free text: the
+     * text with those tokens removed, and the tag names found, in order.
+     *
+     * @param text the tag-stripped text
+     * @param tags the tag names found, in order
+     */
+    private record InlineTags(String text, List<String> tags) {
+    }
+
+    /**
+     * Scans free-form text for inline "#tag" tokens (e.g. "read book
+     * #fun #easy") and removes them, so task descriptions can carry tags
+     * without a separate "tag" command.
+     *
+     * @param text the raw text to scan for inline tags
+     * @return the tag-stripped text and the tag names found, in order
+     */
+    private static InlineTags extractInlineTags(String text) {
+        Matcher matcher = INLINE_TAG_PATTERN.matcher(text);
+        List<String> tags = new ArrayList<>();
+        while (matcher.find()) {
+            tags.add(matcher.group(1));
+        }
+        String stripped = matcher.replaceAll("").trim().replaceAll("\\s+", " ");
+        return new InlineTags(stripped, tags);
     }
 }

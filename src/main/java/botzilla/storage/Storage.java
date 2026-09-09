@@ -61,9 +61,9 @@ public class Storage {
 
     /**
      * Parses a single line from the save file into a Task, based on its
-     * pipe-delimited fields (type, done flag, name, and type-specific
-     * fields). Returns null if the line is malformed or has an
-     * unrecognized type code.
+     * pipe-delimited fields (type, done flag, name, type-specific fields,
+     * and an optional trailing comma-separated tags field). Returns null
+     * if the line is malformed or has an unrecognized type code.
      *
      * @param line a single line from the save file
      * @return the parsed task, or null if the line couldn't be parsed
@@ -79,22 +79,26 @@ public class Storage {
         String name = parts[2].trim();
 
         Task task;
+        String tagsField;
         try {
             switch (typeCode) {
                 case "T":
                     task = new ToDoTask(name);
+                    tagsField = parts.length >= 4 ? parts[3] : "";
                     break;
                 case "D":
                     if (parts.length < 4) {
                         return null;
                     }
                     task = new DeadlineTask(name, parts[3].trim());
+                    tagsField = parts.length >= 5 ? parts[4] : "";
                     break;
                 case "E":
                     if (parts.length < 5) {
                         return null;
                     }
                     task = new EventTask(name, parts[3].trim(), parts[4].trim());
+                    tagsField = parts.length >= 6 ? parts[5] : "";
                     break;
                 default:
                     return null;
@@ -105,6 +109,11 @@ public class Storage {
 
         if (isDone) {
             task.mark();
+        }
+        for (String tag : tagsField.split(",")) {
+            if (!tag.isBlank()) {
+                task.addTag(tag.trim());
+            }
         }
 
         return task;
