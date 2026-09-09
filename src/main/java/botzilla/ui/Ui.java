@@ -124,6 +124,18 @@ public class Ui {
     }
 
     /**
+     * Formats the result of a tag/untag operation. When multiple tags are
+     * added or removed in one command, {@code message} contains one line
+     * per tag, separated by newlines.
+     *
+     * @param message the confirmation message(s) returned by the task
+     * @return the formatted confirmation message
+     */
+    public String formatTagResult(String message) {
+        return " " + message.replace("\n", "\n ");
+    }
+
+    /**
      * Formats the full list of tasks, numbered from 1.
      *
      * @param tasks the task list to display

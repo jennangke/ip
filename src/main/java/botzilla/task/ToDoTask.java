@@ -14,4 +14,20 @@ public class ToDoTask extends Task {
         super(name, TaskType.TODO);
     }
 
+    /**
+     * Returns this task, including any tags, serialized for saving to disk.
+     */
+    @Override
+    public String toFileString() {
+        return super.toFileString() + tagsFileSuffix();
+    }
+
+    /**
+     * Returns a human-readable representation including any tags,
+     * e.g. "[T][ ] read book #fun".
+     */
+    @Override
+    public String toString() {
+        return super.toString() + tagsDisplaySuffix();
+    }
 }

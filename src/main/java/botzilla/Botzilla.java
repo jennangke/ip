@@ -141,6 +141,10 @@ public class Botzilla {
                 String keyword = Parser.parseFindKeyword(input);
                 return ui.formatFindResults(tasks.findTasks(keyword));
             }
+            case TAG:
+                return tagTask(input, Parser.tagKeywordLength(), true);
+            case UNTAG:
+                return tagTask(input, Parser.untagKeywordLength(), false);
             default:
                 throw new BotzillaException("Sorry bestie I don't know what that means :(");
         }
@@ -179,6 +183,34 @@ public class Botzilla {
         String result = ui.formatMarkResult(markAsDone ? task.mark() : task.unmark());
         storage.save(tasks.getAll());
         return result;
+    }
+
+    /**
+     * Adds or removes tag(s) on the task referenced by a "tag"/"untag"
+     * command, persists the updated list to disk, and returns the
+     * confirmation message(s) to display. Shared by the TAG and UNTAG
+     * commands, which differ only in their keyword length and whether
+     * tags are added or removed.
+     *
+     * @param input         raw user input, starting with the "tag "/"untag " keyword.
+     * @param keywordLength length of the leading keyword, to strip before parsing.
+     * @param addTags       true to add the given tags, false to remove them.
+     * @return the formatted confirmation message(s).
+     * @throws BotzillaException if the task number or tag name(s) are missing or invalid.
+     */
+    private String tagTask(String input, int keywordLength, boolean addTags) throws BotzillaException {
+        Parser.TagCommand command = Parser.parseTagCommand(input, keywordLength, tasks.size());
+        Task task = tasks.get(command.index());
+        StringBuilder messages = new StringBuilder();
+        for (String tagName : command.tagNames()) {
+            String message = addTags ? task.addTag(tagName) : task.removeTag(tagName);
+            if (messages.length() > 0) {
+                messages.append("\n");
+            }
+            messages.append(message);
+        }
+        storage.save(tasks.getAll());
+        return ui.formatTagResult(messages.toString());
     }
 
     /**

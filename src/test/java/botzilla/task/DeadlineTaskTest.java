@@ -126,4 +126,36 @@ public class DeadlineTaskTest {
         task.unmark();
         assertTrue(task.toFileString().startsWith("D | 0 | "));
     }
+
+    // ---- tags: appended after the "by" field/label, not before ----
+    @Test
+    void toString_withTag_appendsHashtagAfterByLabel() {
+        DeadlineTask task = new DeadlineTask("return book", "whenever I feel like it");
+        task.addTag("urgent");
+
+        String result = task.toString();
+
+        assertEquals("[D][ ] return book (by: whenever I feel like it) #urgent", result);
+    }
+
+    @Test
+    void toFileString_withTag_appendsTagsFieldAfterByField() {
+        DeadlineTask task = new DeadlineTask("return book", "whenever I feel like it");
+        task.addTag("urgent");
+
+        String result = task.toFileString();
+
+        assertEquals("D | 0 | return book | whenever I feel like it | urgent", result);
+    }
+
+    @Test
+    void toFileString_withMultipleTags_joinsTagsWithComma() {
+        DeadlineTask task = new DeadlineTask("return book", "whenever I feel like it");
+        task.addTag("urgent");
+        task.addTag("work");
+
+        String result = task.toFileString();
+
+        assertEquals("D | 0 | return book | whenever I feel like it | urgent,work", result);
+    }
 }
