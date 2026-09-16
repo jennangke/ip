@@ -26,6 +26,8 @@ public class Main extends Application {
             Scene scene = new Scene(ap);
             stage.setScene(scene);
             stage.setTitle("Botzilla");
+            stage.setMinHeight(220.0);
+            stage.setMinWidth(417.0);
             fxmlLoader.<MainWindow>getController().setBotzilla(botzilla);
             stage.show();
         } catch (IOException e) {
