@@ -8,11 +8,13 @@ import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.geometry.Pos;
+import javafx.geometry.Rectangle2D;
 import javafx.scene.Node;
 import javafx.scene.control.Label;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.HBox;
+import javafx.scene.shape.Circle;
 
 /**
  * Represents a dialog box consisting of an ImageView to represent the
@@ -36,18 +38,35 @@ public class DialogBox extends HBox {
 
         dialog.setText(text);
         displayPicture.setImage(img);
+
+        // Source images aren't necessarily square, so centre-crop to a
+        // square viewport first (like CSS's "object-fit: cover") before
+        // clipping to a circle. Otherwise, with preserveRatio scaling,
+        // the ImageView's rendered bounds shrink to match the image's
+        // own aspect ratio rather than filling the fitWidth x fitHeight
+        // box, and the circle clip ends up cut short on one axis.
+        double side = Math.min(img.getWidth(), img.getHeight());
+        double x = (img.getWidth() - side) / 2;
+        double y = (img.getHeight() - side) / 2;
+        displayPicture.setViewport(new Rectangle2D(x, y, side, side));
+
+        double radius = displayPicture.getFitWidth() / 2;
+        displayPicture.setClip(new Circle(radius, radius, radius));
     }
 
     /**
      * Flips the dialog box such that the ImageView is on the left and
      * text is on the right, used to distinguish Botzilla's replies from
-     * the user's messages.
+     * the user's messages. Also swaps in the "reply-label" style class
+     * so Botzilla's bubble is styled differently from the user's
+     * (see DialogBox.css).
      */
     private void flip() {
         ObservableList<Node> tmp = FXCollections.observableArrayList(this.getChildren());
         Collections.reverse(tmp);
         getChildren().setAll(tmp);
         setAlignment(Pos.TOP_LEFT);
+        dialog.getStyleClass().add("reply-label");
     }
 
     public static DialogBox getUserDialog(String text, Image img) {
