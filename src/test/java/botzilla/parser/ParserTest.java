@@ -33,9 +33,11 @@ public class ParserTest {
     }
 
     @Test
-    void parseCommandType_markWithoutTrailingSpace_returnsUnknown() {
-        // "mark" alone does not match the "mark " prefix check
-        assertEquals(Parser.CommandType.UNKNOWN, Parser.parseCommandType("mark"));
+    void parseCommandType_markAlone_returnsMark() {
+        // "mark" alone is still recognized as MARK, so the missing task
+        // number can be reported as a specific "mark" error rather than a
+        // generic "unknown command" one.
+        assertEquals(Parser.CommandType.MARK, Parser.parseCommandType("mark"));
     }
 
     // ---- UNMARK ----
@@ -45,8 +47,8 @@ public class ParserTest {
     }
 
     @Test
-    void parseCommandType_unmarkWithoutTrailingSpace_returnsUnknown() {
-        assertEquals(Parser.CommandType.UNKNOWN, Parser.parseCommandType("unmark"));
+    void parseCommandType_unmarkAlone_returnsUnmark() {
+        assertEquals(Parser.CommandType.UNMARK, Parser.parseCommandType("unmark"));
     }
 
     // ---- DELETE ----
@@ -124,9 +126,15 @@ public class ParserTest {
     }
 
     @Test
-    void parseCommandType_leadingWhitespace_returnsUnknown() {
-        // No trimming is performed, so leading whitespace breaks the match
-        assertEquals(Parser.CommandType.UNKNOWN, Parser.parseCommandType(" bye"));
+    void parseCommandType_leadingWhitespace_stillRecognized() {
+        // Leading/trailing whitespace around the whole command (e.g. from a
+        // copy-paste) is trimmed before matching.
+        assertEquals(Parser.CommandType.BYE, Parser.parseCommandType(" bye"));
+    }
+
+    @Test
+    void parseCommandType_trailingWhitespace_stillRecognized() {
+        assertEquals(Parser.CommandType.BYE, Parser.parseCommandType("bye  "));
     }
 
     @Test
@@ -149,8 +157,8 @@ public class ParserTest {
     }
 
     @Test
-    void parseCommandType_tagWithoutTrailingSpace_returnsUnknown() {
-        assertEquals(Parser.CommandType.UNKNOWN, Parser.parseCommandType("tag"));
+    void parseCommandType_tagAlone_returnsTag() {
+        assertEquals(Parser.CommandType.TAG, Parser.parseCommandType("tag"));
     }
 
     // ---- UNTAG ----
@@ -160,8 +168,8 @@ public class ParserTest {
     }
 
     @Test
-    void parseCommandType_untagWithoutTrailingSpace_returnsUnknown() {
-        assertEquals(Parser.CommandType.UNKNOWN, Parser.parseCommandType("untag"));
+    void parseCommandType_untagAlone_returnsUntag() {
+        assertEquals(Parser.CommandType.UNTAG, Parser.parseCommandType("untag"));
     }
 
     // ---- parseTagCommand() ----
@@ -263,5 +271,107 @@ public class ParserTest {
         assertEquals("party", task.getName());
         assertEquals(Set.of("fun", "social"), task.getTags());
         assertTrue(task.getDate().isPresent());
+    }
+
+    // ---- command format errors: extra whitespace around "/by"/"/from"/"/to" ----
+    @Test
+    void parseDeadline_extraSpacesAroundByClause_stillParses() throws BotzillaException {
+        Task task = Parser.parseDeadline("deadline return book   /by   2/12/2019 1800");
+
+        assertEquals("return book", task.getName());
+        assertTrue(task.getDate().isPresent());
+    }
+
+    @Test
+    void parseEvent_extraSpacesAroundFromToClauses_stillParses() throws BotzillaException {
+        Task task = Parser.parseEvent("event party   /from   1/1/2026 1800   /to   1/1/2026 2200");
+
+        assertEquals("party", task.getName());
+        assertTrue(task.getDate().isPresent());
+    }
+
+    // ---- command format errors: a parameter given more than once ----
+    @Test
+    void parseDeadline_byGivenTwice_throwsException() {
+        assertThrows(BotzillaException.class, () ->
+                Parser.parseDeadline("deadline return book /by 2/12/2019 /by 3/12/2019"));
+    }
+
+    @Test
+    void parseEvent_fromGivenTwice_throwsException() {
+        assertThrows(BotzillaException.class, () ->
+                Parser.parseEvent("event party /from 1/1/2026 1800 /from 2/1/2026 1800 /to 1/1/2026 2200"));
+    }
+
+    @Test
+    void parseEvent_toGivenTwice_throwsException() {
+        assertThrows(BotzillaException.class, () ->
+                Parser.parseEvent("event party /from 1/1/2026 1800 /to 1/1/2026 2200 /to 1/1/2026 2300"));
+    }
+
+    // ---- command format errors: special characters that would break the save file ----
+    @Test
+    void parseTodo_nameContainsPipeCharacter_throwsException() {
+        assertThrows(BotzillaException.class, () -> Parser.parseTodo("todo read | book"));
+    }
+
+    @Test
+    void parseTagCommand_tagContainsPipeCharacter_throwsException() {
+        int keywordLength = Parser.tagKeywordLength();
+        assertThrows(BotzillaException.class, () -> Parser.parseTagCommand("tag 1 fun|urgent", keywordLength, 3));
+    }
+
+    @Test
+    void parseTagCommand_tagContainsComma_throwsException() {
+        int keywordLength = Parser.tagKeywordLength();
+        assertThrows(BotzillaException.class, () -> Parser.parseTagCommand("tag 1 fun,urgent", keywordLength, 3));
+    }
+
+    @Test
+    void parseTagCommand_bareHashWithNoName_throwsException() {
+        int keywordLength = Parser.tagKeywordLength();
+        assertThrows(BotzillaException.class, () -> Parser.parseTagCommand("tag 1 #", keywordLength, 3));
+    }
+
+    // ---- data not as expected: non-existent calendar dates ----
+    @Test
+    void parseDeadline_nonExistentDate_throwsException() {
+        // February never has 30 days, in a leap year or otherwise.
+        assertThrows(BotzillaException.class, () ->
+                Parser.parseDeadline("deadline return book /by 30/2/2019 1800"));
+    }
+
+    @Test
+    void parseDeadline_monthOutOfRange_throwsException() {
+        assertThrows(BotzillaException.class, () ->
+                Parser.parseDeadline("deadline return book /by 1/13/2019"));
+    }
+
+    @Test
+    void parseDeadline_timeOutOfRange_throwsException() {
+        assertThrows(BotzillaException.class, () ->
+                Parser.parseDeadline("deadline return book /by 2/12/2019 2500"));
+    }
+
+    @Test
+    void parseDeadline_genuineFreeTextDate_isKeptAsRawTextWithoutError() throws BotzillaException {
+        // Free text that isn't shaped like a date attempt at all (e.g. no
+        // slashes) is intentionally accepted as-is, not treated as an error.
+        Task task = Parser.parseDeadline("deadline return book /by whenever I feel like it");
+
+        assertTrue(task.getDate().isEmpty());
+    }
+
+    // ---- data not as expected: event start not before end ----
+    @Test
+    void parseEvent_startAfterEnd_throwsException() {
+        assertThrows(BotzillaException.class, () ->
+                Parser.parseEvent("event party /from 2/1/2026 1800 /to 1/1/2026 1800"));
+    }
+
+    @Test
+    void parseEvent_startEqualsEnd_throwsException() {
+        assertThrows(BotzillaException.class, () ->
+                Parser.parseEvent("event party /from 1/1/2026 1800 /to 1/1/2026 1800"));
     }
 }

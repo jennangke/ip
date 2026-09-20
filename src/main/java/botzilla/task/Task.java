@@ -188,5 +188,18 @@ public abstract class Task {
         }
         return " | " + String.join(",", tags);
     }
+
+    /**
+     * Returns a signature identifying this task's substantive content —
+     * its type and name, plus (for subclasses with dates) its date
+     * field(s) — but not its done/tag state. Used by {@link TaskList} to
+     * detect an attempt to add a task that's effectively a duplicate of
+     * one already in the list.
+     *
+     * @return this task's duplicate-detection signature
+     */
+    String duplicateSignature() {
+        return type.getIcon() + "|" + name.trim().toLowerCase();
+    }
 }
 

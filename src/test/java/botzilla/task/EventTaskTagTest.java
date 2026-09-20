@@ -4,6 +4,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.junit.jupiter.api.Test;
 
+import botzilla.BotzillaException;
+
 /**
  * Tests that tags on an EventTask are appended after the "from"/"to"
  * fields/label, so they always land as the last field regardless of
@@ -12,7 +14,7 @@ import org.junit.jupiter.api.Test;
 public class EventTaskTagTest {
 
     @Test
-    void toString_withTag_appendsHashtagAfterFromToLabel() {
+    void toString_withTag_appendsHashtagAfterFromToLabel() throws BotzillaException {
         EventTask task = new EventTask("party", "later", "even later");
         task.addTag("fun");
 
@@ -22,7 +24,7 @@ public class EventTaskTagTest {
     }
 
     @Test
-    void toFileString_withTag_appendsTagsFieldAfterFromToFields() {
+    void toFileString_withTag_appendsTagsFieldAfterFromToFields() throws BotzillaException {
         EventTask task = new EventTask("party", "later", "even later");
         task.addTag("fun");
 
@@ -32,7 +34,7 @@ public class EventTaskTagTest {
     }
 
     @Test
-    void toFileString_withMultipleTags_joinsTagsWithComma() {
+    void toFileString_withMultipleTags_joinsTagsWithComma() throws BotzillaException {
         EventTask task = new EventTask("party", "later", "even later");
         task.addTag("fun");
         task.addTag("social");
@@ -43,7 +45,7 @@ public class EventTaskTagTest {
     }
 
     @Test
-    void toFileString_noTags_omitsTagsField() {
+    void toFileString_noTags_omitsTagsField() throws BotzillaException {
         EventTask task = new EventTask("party", "later", "even later");
 
         assertEquals("E | 0 | party | later | even later", task.toFileString());

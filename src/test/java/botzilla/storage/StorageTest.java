@@ -1,6 +1,7 @@
 package botzilla.storage;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
@@ -102,5 +103,48 @@ public class StorageTest {
 
         assertEquals(1, loaded.size());
         assertTrue(loaded.get(0).getTags().isEmpty());
+    }
+
+    // ---- environment issues: file content not as expected ----
+    @Test
+    void load_corruptedLines_areSkippedButCounted() throws BotzillaException, IOException {
+        Path file = tempDir.resolve("botzilla.txt");
+        try (Writer writer = Files.newBufferedWriter(file, StandardCharsets.UTF_8)) {
+            writer.write("T | 0 | read book\n");
+            writer.write("this line is not in the expected format\n");
+            writer.write("Z | 0 | unknown type code\n");
+            writer.write("D | 0 | return book\n"); // missing the required "/by" field
+            writer.write("E | 1 | party | 1/1/2026 1800\n"); // missing the required "/to" field
+        }
+        Storage storage = new Storage(file.toString());
+
+        ArrayList<Task> loaded = storage.load();
+
+        assertEquals(1, loaded.size());
+        assertEquals("read book", loaded.get(0).getName());
+        assertEquals(4, storage.getSkippedLineCount());
+    }
+
+    @Test
+    void load_noCorruptedLines_skippedCountIsZero() throws BotzillaException {
+        Storage storage = newStorage();
+        storage.save(new ArrayList<>(List.of(new ToDoTask("read book"))));
+
+        storage.load();
+
+        assertEquals(0, storage.getSkippedLineCount());
+    }
+
+    // ---- environment issues: file access denied ----
+    @Test
+    void save_parentPathIsAFileNotADirectory_throwsException() throws IOException {
+        // Force the save to fail: the "parent directory" the save file
+        // would need to live under is actually a regular file, so it can
+        // neither be treated as an existing directory nor created as one.
+        Path blockingFile = tempDir.resolve("blocked");
+        Files.writeString(blockingFile, "not a directory");
+        Storage storage = new Storage(blockingFile.resolve("botzilla.txt").toString());
+
+        assertThrows(BotzillaException.class, () -> storage.save(new ArrayList<>(List.of(new ToDoTask("x")))));
     }
 }

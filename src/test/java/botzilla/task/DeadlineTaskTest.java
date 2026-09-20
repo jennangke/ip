@@ -10,11 +10,13 @@ import java.time.Month;
 
 import org.junit.jupiter.api.Test;
 
+import botzilla.BotzillaException;
+
 public class DeadlineTaskTest {
 
     // ---- constructor / getBy(): parseable date with time ----
     @Test
-    void getBy_parseableDateWithTime_returnsMatchingDateTime() {
+    void getBy_parseableDateWithTime_returnsMatchingDateTime() throws BotzillaException {
         DeadlineTask task = new DeadlineTask("return book", "2/12/2019 1800");
 
         LocalDateTime by = task.getBy();
@@ -29,7 +31,7 @@ public class DeadlineTaskTest {
 
     // ---- constructor / getBy(): parseable date without time ----
     @Test
-    void getBy_parseableDateWithoutTime_returnsNonNullDate() {
+    void getBy_parseableDateWithoutTime_returnsNonNullDate() throws BotzillaException {
         DeadlineTask task = new DeadlineTask("return book", "2/12/2019");
 
         LocalDateTime by = task.getBy();
@@ -42,14 +44,14 @@ public class DeadlineTaskTest {
 
     // ---- constructor / getBy(): unparseable text falls back to raw string ----
     @Test
-    void getBy_unparseableText_returnsNull() {
+    void getBy_unparseableText_returnsNull() throws BotzillaException {
         DeadlineTask task = new DeadlineTask("return book", "whenever I feel like it");
 
         assertNull(task.getBy());
     }
 
     @Test
-    void getBy_emptyByText_returnsNull() {
+    void getBy_emptyByText_returnsNull() throws BotzillaException {
         DeadlineTask task = new DeadlineTask("return book", "");
 
         assertNull(task.getBy());
@@ -57,7 +59,7 @@ public class DeadlineTaskTest {
 
     // ---- toFileString() ----
     @Test
-    void toFileString_parseableDate_includesNameAndByField() {
+    void toFileString_parseableDate_includesNameAndByField() throws BotzillaException {
         DeadlineTask task = new DeadlineTask("return book", "2/12/2019 1800");
 
         String result = task.toFileString();
@@ -66,7 +68,7 @@ public class DeadlineTaskTest {
     }
 
     @Test
-    void toFileString_unparseableDate_fallsBackToRawText() {
+    void toFileString_unparseableDate_fallsBackToRawText() throws BotzillaException {
         DeadlineTask task = new DeadlineTask("return book", "whenever I feel like it");
 
         String result = task.toFileString();
@@ -75,7 +77,7 @@ public class DeadlineTaskTest {
     }
 
     @Test
-    void toFileString_doneTask_showsOneDoneFlag() {
+    void toFileString_doneTask_showsOneDoneFlag() throws BotzillaException {
         DeadlineTask task = new DeadlineTask("return book", "whenever I feel like it");
         task.mark();
 
@@ -86,7 +88,7 @@ public class DeadlineTaskTest {
 
     // ---- toString() ----
     @Test
-    void toString_parseableDate_containsIconNameAndByLabel() {
+    void toString_parseableDate_containsIconNameAndByLabel() throws BotzillaException {
         DeadlineTask task = new DeadlineTask("return book", "2/12/2019 1800");
 
         String result = task.toString();
@@ -97,7 +99,7 @@ public class DeadlineTaskTest {
     }
 
     @Test
-    void toString_unparseableDate_showsRawTextInByLabel() {
+    void toString_unparseableDate_showsRawTextInByLabel() throws BotzillaException {
         DeadlineTask task = new DeadlineTask("return book", "whenever I feel like it");
 
         String result = task.toString();
@@ -106,7 +108,7 @@ public class DeadlineTaskTest {
     }
 
     @Test
-    void toString_doneTask_showsXStatus() {
+    void toString_doneTask_showsXStatus() throws BotzillaException {
         DeadlineTask task = new DeadlineTask("return book", "whenever I feel like it");
         task.mark();
 
@@ -117,7 +119,7 @@ public class DeadlineTaskTest {
 
     // ---- inherited mark()/unmark() behavior still works on subclass ----
     @Test
-    void mark_thenUnmark_statusTogglesCorrectly() {
+    void mark_thenUnmark_statusTogglesCorrectly() throws BotzillaException {
         DeadlineTask task = new DeadlineTask("return book", "2/12/2019 1800");
 
         task.mark();
@@ -129,7 +131,7 @@ public class DeadlineTaskTest {
 
     // ---- tags: appended after the "by" field/label, not before ----
     @Test
-    void toString_withTag_appendsHashtagAfterByLabel() {
+    void toString_withTag_appendsHashtagAfterByLabel() throws BotzillaException {
         DeadlineTask task = new DeadlineTask("return book", "whenever I feel like it");
         task.addTag("urgent");
 
@@ -139,7 +141,7 @@ public class DeadlineTaskTest {
     }
 
     @Test
-    void toFileString_withTag_appendsTagsFieldAfterByField() {
+    void toFileString_withTag_appendsTagsFieldAfterByField() throws BotzillaException {
         DeadlineTask task = new DeadlineTask("return book", "whenever I feel like it");
         task.addTag("urgent");
 
@@ -149,7 +151,7 @@ public class DeadlineTaskTest {
     }
 
     @Test
-    void toFileString_withMultipleTags_joinsTagsWithComma() {
+    void toFileString_withMultipleTags_joinsTagsWithComma() throws BotzillaException {
         DeadlineTask task = new DeadlineTask("return book", "whenever I feel like it");
         task.addTag("urgent");
         task.addTag("work");

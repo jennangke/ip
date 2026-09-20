@@ -3,6 +3,8 @@ package botzilla.task;
 import java.time.LocalDateTime;
 import java.util.Optional;
 
+import botzilla.BotzillaException;
+
 /**
  * Represents a single date/time value entered as free-form text by the
  * user, which may or may not have parsed successfully. A successfully
@@ -30,8 +32,10 @@ final class FlexibleDateTime {
      *
      * @param text the raw user-entered text.
      * @return a FlexibleDateTime wrapping either the parsed value or the raw text.
+     * @throws BotzillaException if the text is date-shaped but names an
+     *                           invalid calendar date or time (see {@link DateTimeUtil#parse}).
      */
-    static FlexibleDateTime parse(String text) {
+    static FlexibleDateTime parse(String text) throws BotzillaException {
         Optional<LocalDateTime> parsed = DateTimeUtil.parse(text);
         return parsed.isPresent()
                 ? new FlexibleDateTime(parsed.get(), DateTimeUtil.hasTimeComponent(text), null)

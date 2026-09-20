@@ -18,6 +18,7 @@ import botzilla.task.ToDoTask;
  */
 public class Storage {
     private String filePath;
+    private int skippedLineCount;
 
     /**
      * Constructs a Storage bound to the given file path.
@@ -31,13 +32,17 @@ public class Storage {
     /**
      * Loads tasks from the save file. Returns an empty list if the file
      * doesn't exist yet (e.g. first run). Lines that can't be parsed are
-     * skipped rather than causing a failure.
+     * skipped rather than causing a failure; the number skipped is
+     * recorded and can be retrieved via {@link #getSkippedLineCount()} so
+     * the caller can let the user know some saved data was lost.
      *
      * @return the list of tasks loaded from disk
-     * @throws BotzillaException if the file exists but can't be read
+     * @throws BotzillaException if the file exists but can't be read (e.g.
+     *                           the OS denies read access to it)
      */
     public ArrayList<Task> load() throws BotzillaException {
         ArrayList<Task> tasks = new ArrayList<>();
+        skippedLineCount = 0;
         File file = new File(filePath);
 
         if (!file.exists()) {
@@ -47,9 +52,14 @@ public class Storage {
         try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
             String line;
             while ((line = reader.readLine()) != null) {
+                if (line.isBlank()) {
+                    continue;
+                }
                 Task task = parseLine(line);
                 if (task != null) {
                     tasks.add(task);
+                } else {
+                    skippedLineCount++;
                 }
             }
         } catch (IOException e) {
@@ -57,6 +67,18 @@ public class Storage {
         }
 
         return tasks;
+    }
+
+    /**
+     * Returns the number of lines skipped by the most recent {@link #load()}
+     * call because they couldn't be parsed (e.g. corrupted or manually
+     * edited save file content), so the caller can warn the user that some
+     * saved data was lost.
+     *
+     * @return the number of corrupted lines skipped during the last load
+     */
+    public int getSkippedLineCount() {
+        return skippedLineCount;
     }
 
     /**
@@ -125,13 +147,16 @@ public class Storage {
      * already exist.
      *
      * @param tasks the current list of tasks to persist
+     * @throws BotzillaException if the file can't be written (e.g. the
+     *                           OS denies write access, or the parent
+     *                           directory couldn't be created)
      */
-    public void save(ArrayList<Task> tasks) {
+    public void save(ArrayList<Task> tasks) throws BotzillaException {
         File file = new File(filePath);
         File parentDir = file.getParentFile();
 
-        if (parentDir != null && !parentDir.exists()) {
-            parentDir.mkdirs();
+        if (parentDir != null && !parentDir.exists() && !parentDir.mkdirs()) {
+            throw new BotzillaException("could not create the save folder \"" + parentDir + "\"");
         }
 
         try (FileWriter writer = new FileWriter(file)) {
@@ -139,7 +164,7 @@ public class Storage {
                 writer.write(task.toFileString() + System.lineSeparator());
             }
         } catch (IOException e) {
-            System.out.println(" Warning: could not save tasks (" + e.getMessage() + ")");
+            throw new BotzillaException(e.getMessage());
         }
     }
 }

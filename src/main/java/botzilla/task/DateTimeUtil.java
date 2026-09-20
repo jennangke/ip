@@ -1,10 +1,15 @@
 package botzilla.task;
 
+import java.time.DateTimeException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeParseException;
 import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import botzilla.BotzillaException;
 
 /**
  * Utility for parsing user-entered dates/times in "d/M/yyyy" or
@@ -21,32 +26,61 @@ public class DateTimeUtil {
     private static final DateTimeFormatter FILE_FORMAT_DATE_ONLY =
             DateTimeFormatter.ofPattern("d/M/yyyy");
 
+    // Recognises text shaped like "d/M/yyyy" or "d/M/yyyy <time>". Matched
+    // manually (rather than via DateTimeFormatter) so that day/month/time
+    // values are validated with LocalDate.of/LocalTime.of below: java.time's
+    // default (SMART) resolver silently clamps an out-of-range day-of-month
+    // to the last valid day of the month (e.g. "30/2/2019" would otherwise
+    // become 28 Feb 2019 with no warning), which would hide typos instead
+    // of reporting them.
+    private static final Pattern DATE_SHAPE = Pattern.compile("(\\d{1,2})/(\\d{1,2})/(\\d{4})(?:\\s+(\\d+))?");
+
     /**
-     * Attempts to parse the given text as a date or date-time, trying
-     * "d/M/yyyy HHmm" first, then "d/M/yyyy". Returns empty if neither
-     * format matches, so the caller can fall back to storing the text
-     * as-is.
+     * Attempts to parse the given text as a date or date-time in
+     * "d/M/yyyy" or "d/M/yyyy HHmm" shape. Text that isn't shaped like a
+     * date at all (e.g. free-form text such as "next Friday") is not an
+     * error: this returns empty so the caller can store it as-is.
      *
      * @param text the raw user input to parse
-     * @return the parsed LocalDateTime, or empty if unparseable
+     * @return the parsed LocalDateTime, or empty if the text isn't date-shaped
+     * @throws BotzillaException if the text is date-shaped but names an
+     *                           invalid calendar date or time (e.g. "30/2/2019",
+     *                           a month outside 1-12, or a time outside HHmm range)
      */
-    public static Optional<LocalDateTime> parse(String text) {
+    public static Optional<LocalDateTime> parse(String text) throws BotzillaException {
         String trimmed = text.trim();
-
-        try {
-            return Optional.of(LocalDateTime.parse(trimmed, FILE_FORMAT_WITH_TIME));
-        } catch (DateTimeParseException ignored) {
-            // Not in this format; fall through and try the next format
+        Matcher matcher = DATE_SHAPE.matcher(trimmed);
+        if (!matcher.matches()) {
+            return Optional.empty();
         }
 
+        int day = Integer.parseInt(matcher.group(1));
+        int month = Integer.parseInt(matcher.group(2));
+        int year = Integer.parseInt(matcher.group(3));
+        LocalDate date;
         try {
-            LocalDate date = LocalDate.parse(trimmed, FILE_FORMAT_DATE_ONLY);
+            date = LocalDate.of(year, month, day);
+        } catch (DateTimeException e) {
+            throw new BotzillaException("\"" + trimmed + "\" isn't a real calendar date "
+                    + "(check the day and month) — please use d/M/yyyy, e.g. 2/12/2019.");
+        }
+
+        String timePart = matcher.group(4);
+        if (timePart == null) {
             return Optional.of(date.atStartOfDay());
-        } catch (DateTimeParseException ignored) {
-            // Not in this format either; caller will treat as unparseable
         }
-
-        return Optional.empty();
+        if (timePart.length() != 4) {
+            throw new BotzillaException("\"" + timePart + "\" isn't a valid time — please use 4 digits "
+                    + "in HHmm format, e.g. 1800 for 6pm.");
+        }
+        int hour = Integer.parseInt(timePart.substring(0, 2));
+        int minute = Integer.parseInt(timePart.substring(2, 4));
+        try {
+            return Optional.of(LocalDateTime.of(date, LocalTime.of(hour, minute)));
+        } catch (DateTimeException e) {
+            throw new BotzillaException("\"" + timePart + "\" isn't a valid time — please use 4 digits "
+                    + "in HHmm format, e.g. 1800 for 6pm.");
+        }
     }
 
     /**
@@ -55,18 +89,11 @@ public class DateTimeUtil {
      * date-only value.
      *
      * @param text the raw user input to check
-     * @return true if the text matches the "with time" format
+     * @return true if the text includes a time component
      */
     public static boolean hasTimeComponent(String text) {
-        assert parse(text).isPresent()
-                : "text should already be parseable by parse(), as documented in this method's precondition; "
-                + "callers must not invoke this on text that failed to parse";
-        try {
-            LocalDateTime.parse(text.trim(), FILE_FORMAT_WITH_TIME);
-            return true;
-        } catch (DateTimeParseException e) {
-            return false;
-        }
+        Matcher matcher = DATE_SHAPE.matcher(text.trim());
+        return matcher.matches() && matcher.group(4) != null;
     }
 
     /**

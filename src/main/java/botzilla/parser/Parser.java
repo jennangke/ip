@@ -51,6 +51,12 @@ public class Parser {
     // as an alternative to the dedicated "tag"/"untag" commands.
     private static final Pattern INLINE_TAG_PATTERN = Pattern.compile("#(\\w+)");
 
+    // A valid tag/untag command argument: letters, digits, and underscores,
+    // with an optional leading '#'. Rejects anything that would corrupt the
+    // comma-delimited tags field in the save file (e.g. a literal ',' or
+    // '|'), and rejects a bare/empty tag (e.g. a lone "#").
+    private static final Pattern VALID_TAG_TOKEN = Pattern.compile("#?\\w+");
+
     /**
      * Determines which command the given input represents, based on its
      * leading keyword.
@@ -59,29 +65,33 @@ public class Parser {
      * @return the matching CommandType, or UNKNOWN if unrecognized
      */
     public static CommandType parseCommandType(String input) {
-        if (input.equals("bye")) {
+        // Leading/trailing whitespace around the whole command (e.g. a
+        // stray space from copy-pasting) shouldn't stop it from being
+        // recognized, so match against a trimmed copy throughout.
+        String trimmed = input.trim();
+        if (trimmed.equals("bye")) {
             return CommandType.BYE;
-        } else if (input.equals("list")) {
+        } else if (trimmed.equals("list")) {
             return CommandType.LIST;
-        } else if (input.startsWith(CMD_MARK)) {
+        } else if (trimmed.equals(CMD_MARK.trim()) || trimmed.startsWith(CMD_MARK)) {
             return CommandType.MARK;
-        } else if (input.startsWith(CMD_UNMARK)) {
+        } else if (trimmed.equals(CMD_UNMARK.trim()) || trimmed.startsWith(CMD_UNMARK)) {
             return CommandType.UNMARK;
-        } else if (input.equals(CMD_DELETE) || input.startsWith(CMD_DELETE + " ")) {
+        } else if (trimmed.equals(CMD_DELETE) || trimmed.startsWith(CMD_DELETE + " ")) {
             return CommandType.DELETE;
-        } else if (input.equals(CMD_ON) || input.startsWith(CMD_ON + " ")) {
+        } else if (trimmed.equals(CMD_ON) || trimmed.startsWith(CMD_ON + " ")) {
             return CommandType.ON;
-        } else if (input.equals(CMD_TODO) || input.startsWith(CMD_TODO + " ")) {
+        } else if (trimmed.equals(CMD_TODO) || trimmed.startsWith(CMD_TODO + " ")) {
             return CommandType.TODO;
-        } else if (input.equals(CMD_DEADLINE) || input.startsWith(CMD_DEADLINE + " ")) {
+        } else if (trimmed.equals(CMD_DEADLINE) || trimmed.startsWith(CMD_DEADLINE + " ")) {
             return CommandType.DEADLINE;
-        } else if (input.equals(CMD_EVENT) || input.startsWith(CMD_EVENT + " ")) {
+        } else if (trimmed.equals(CMD_EVENT) || trimmed.startsWith(CMD_EVENT + " ")) {
             return CommandType.EVENT;
-        } else if (input.equals(CMD_FIND) || input.startsWith(CMD_FIND + " ")) {
+        } else if (trimmed.equals(CMD_FIND) || trimmed.startsWith(CMD_FIND + " ")) {
             return CommandType.FIND;
-        } else if (input.startsWith(CMD_TAG)) {
+        } else if (trimmed.equals(CMD_TAG.trim()) || trimmed.startsWith(CMD_TAG)) {
             return CommandType.TAG;
-        } else if (input.startsWith(CMD_UNTAG)) {
+        } else if (trimmed.equals(CMD_UNTAG.trim()) || trimmed.startsWith(CMD_UNTAG)) {
             return CommandType.UNTAG;
         } else {
             return CommandType.UNKNOWN;
@@ -166,7 +176,8 @@ public class Parser {
      *
      * @param input the raw user input, e.g. "todo read book"
      * @return the constructed ToDoTask
-     * @throws BotzillaException if the description is empty
+     * @throws BotzillaException if the description is empty or contains a
+     *                           character reserved by the save file format
      */
     public static Task parseTodo(String input) throws BotzillaException {
         String rest = input.length() > CMD_TODO.length() ? input.substring(CMD_TODO.length()).trim() : "";
@@ -174,6 +185,7 @@ public class Parser {
         if (extracted.text().isEmpty()) {
             throw new BotzillaException("Please give the todo a name! Description cannot be empty");
         }
+        requireNoReservedChars(extracted.text(), "a task description");
         Task task = new ToDoTask(extracted.text());
         extracted.tags().forEach(task::addTag);
         return task;
@@ -184,12 +196,21 @@ public class Parser {
      *
      * @param input Raw user input, e.g. "deadline return book /by 2/12/2019 1800".
      * @return The constructed DeadlineTask.
-     * @throws BotzillaException If the description or "/by" date is missing.
+     * @throws BotzillaException If the description or "/by" date is missing,
+     *                           "/by" is given more than once, the text
+     *                           contains a character reserved by the save
+     *                           file format, or the date given is invalid
+     *                           (see {@link botzilla.task.DateTimeUtil#parse}).
      */
     public static Task parseDeadline(String input) throws BotzillaException {
         String rest = input.length() > CMD_DEADLINE.length() ? input.substring(CMD_DEADLINE.length()).trim() : "";
         InlineTags extracted = extractInlineTags(rest);
-        String[] parts = extracted.text().split(" /by ", 2);
+        requireNoReservedChars(extracted.text(), "a task description or date");
+
+        String[] parts = extracted.text().split("\\s+/by\\s+");
+        if (parts.length > 2) {
+            throw new BotzillaException("Please give me only one '/by' date for a deadline.");
+        }
         if (parts.length < 2 || parts[0].trim().isEmpty() || parts[1].trim().isEmpty()) {
             throw new BotzillaException("ADD A NAME, ADD A DATE! A deadline needs a description and a '/by' "
                     + "date, e.g. deadline return book /by 2/12/2019 1800");
@@ -204,22 +225,38 @@ public class Parser {
      *
      * @param input Raw user input, e.g. "event meeting /from 2/12/2019 1400 /to 2/12/2019 1600".
      * @return The constructed EventTask.
-     * @throws BotzillaException If the description, "/from", or "/to" is missing.
+     * @throws BotzillaException If the description, "/from", or "/to" is
+     *                           missing, either is given more than once, the
+     *                           text contains a character reserved by the
+     *                           save file format, either date given is
+     *                           invalid (see {@link botzilla.task.DateTimeUtil#parse}),
+     *                           or the start isn't before the end.
      */
     public static Task parseEvent(String input) throws BotzillaException {
         String rest = input.length() > CMD_EVENT.length() ? input.substring(CMD_EVENT.length()).trim() : "";
         InlineTags extracted = extractInlineTags(rest);
-        String[] fromSplit = extracted.text().split(" /from ", 2);
+        requireNoReservedChars(extracted.text(), "a task description or date");
+
+        String[] fromSplit = extracted.text().split("\\s+/from\\s+");
+        if (fromSplit.length > 2) {
+            throw new BotzillaException("Please give me only one '/from' time for an event.");
+        }
         if (fromSplit.length < 2 || fromSplit[0].trim().isEmpty()) {
             throw new BotzillaException("ERROR ALERT! An event needs a description and '/from' and '/to' "
                     + "times, e.g. event meeting /from 2/12/2019 1400 /to 2/12/2019 1600");
         }
-        String[] toSplit = fromSplit[1].split(" /to ", 2);
+        String[] toSplit = fromSplit[1].split("\\s+/to\\s+");
+        if (toSplit.length > 2) {
+            throw new BotzillaException("Please give me only one '/to' time for an event.");
+        }
         if (toSplit.length < 2 || toSplit[0].trim().isEmpty() || toSplit[1].trim().isEmpty()) {
             throw new BotzillaException("ERROR ALERT! An event needs a description and '/from' and '/to' "
                     + "times, e.g. event meeting /from 2/12/2019 1400 /to 2/12/2019 1600");
         }
-        Task task = new EventTask(fromSplit[0].trim(), toSplit[0].trim(), toSplit[1].trim());
+        EventTask task = new EventTask(fromSplit[0].trim(), toSplit[0].trim(), toSplit[1].trim());
+        if (task.getStart() != null && task.getEnd() != null && !task.getStart().isBefore(task.getEnd())) {
+            throw new BotzillaException("An event's start time must be before its end time!");
+        }
         extracted.tags().forEach(task::addTag);
         return task;
     }
@@ -269,7 +306,10 @@ public class Parser {
      * @param keywordLength length of the leading keyword, to strip before parsing
      * @param taskCount     current number of tasks, for bounds checking
      * @return the parsed task index and tag names
-     * @throws BotzillaException if the task number is missing/invalid or no tag name is given
+     * @throws BotzillaException if the task number is missing/invalid, no
+     *                           tag name is given, or a tag name contains a
+     *                           character other than letters/digits/underscore
+     *                           (an optional leading '#' is allowed)
      */
     public static TagCommand parseTagCommand(String input, int keywordLength, int taskCount)
             throws BotzillaException {
@@ -280,7 +320,30 @@ public class Parser {
         }
         int index = parseTaskNumber(tokens[0], taskCount);
         List<String> tagNames = Arrays.asList(tokens[1].trim().split("\\s+"));
+        for (String tagName : tagNames) {
+            if (!VALID_TAG_TOKEN.matcher(tagName).matches()) {
+                throw new BotzillaException("\"" + tagName + "\" isn't a valid tag — tags can only contain "
+                        + "letters, numbers, and underscores, with an optional leading '#', e.g. tag 2 fun_times");
+            }
+        }
         return new TagCommand(index, tagNames);
+    }
+
+    /**
+     * Rejects text containing a character reserved by the save file's
+     * pipe-delimited format (a literal '|') or a line break, either of
+     * which would corrupt the file (splitting the line into extra fields,
+     * or into extra lines) the next time tasks are saved and reloaded.
+     *
+     * @param text     the text to check
+     * @param whatItIs a short description of the text, for the error message
+     * @throws BotzillaException if the text contains '|', '\n', or '\r'
+     */
+    private static void requireNoReservedChars(String text, String whatItIs) throws BotzillaException {
+        if (text.contains("|") || text.contains("\n") || text.contains("\r")) {
+            throw new BotzillaException("Sorry, " + whatItIs + " can't contain a '|' character or line breaks — "
+                    + "that would mess up how I save your tasks.");
+        }
     }
 
     /**

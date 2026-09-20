@@ -18,10 +18,20 @@ public class Botzilla {
     private TaskList tasks;
     private Ui ui;
 
+    // Set during construction if some saved data couldn't be loaded (e.g.
+    // corrupted lines in the save file), so it can be surfaced to the user
+    // alongside the greeting — the constructor runs before either the
+    // console loop or the GUI window exists, so it can't display it directly.
+    private String startupWarning;
+
     /**
      * Constructs a Botzilla instance, loading any previously saved tasks
-     * from the given file path. If loading fails, starts with an empty
-     * task list and notifies the user via the Ui.
+     * from the given file path. If loading fails entirely, starts with an
+     * empty task list and notifies the user via the Ui. If loading
+     * succeeds but some lines were corrupted and skipped, keeps the
+     * successfully loaded tasks and remembers a warning to show once the
+     * console/GUI is ready to display it (see {@link #getGreeting()} and
+     * {@link #run()}).
      *
      * @param filePath Path to the file used for loading and saving tasks.
      */
@@ -30,6 +40,12 @@ public class Botzilla {
         storage = new Storage(filePath);
         try {
             tasks = new TaskList(storage.load());
+            int skipped = storage.getSkippedLineCount();
+            if (skipped > 0) {
+                startupWarning = "Heads up: " + skipped + " line" + (skipped == 1 ? "" : "s")
+                        + " in your saved tasks file " + (skipped == 1 ? "was" : "were")
+                        + " corrupted, so " + (skipped == 1 ? "it was" : "they were") + " skipped.";
+            }
         } catch (BotzillaException e) {
             ui.showLoadingError();
             tasks = new TaskList();
@@ -42,10 +58,14 @@ public class Botzilla {
      */
     public void run() {
         ui.showWelcome();
+        if (startupWarning != null) {
+            System.out.println(ui.formatError(startupWarning));
+            ui.showLine();
+        }
 
         Parser.CommandType type;
         do {
-            String input = ui.readCommand();
+            String input = ui.readCommand().trim();
             type = Parser.parseCommandType(input);
 
             try {
@@ -60,14 +80,17 @@ public class Botzilla {
     }
 
     /**
-     * Returns Botzilla's opening greeting. Used by the GUI to display an
-     * initial message when the window first opens, mirroring the welcome
-     * banner shown at the start of the console loop.
+     * Returns Botzilla's opening greeting, including a warning about any
+     * corrupted save-file lines that were skipped on startup, if any. Used
+     * by the GUI to display an initial message when the window first
+     * opens, mirroring the welcome banner shown at the start of the
+     * console loop.
      *
      * @return Botzilla's greeting message.
      */
     public String getGreeting() {
-        return ui.formatGreeting();
+        String greeting = ui.formatGreeting();
+        return startupWarning == null ? greeting : greeting + "\n" + startupWarning;
     }
 
     /**
@@ -79,7 +102,7 @@ public class Botzilla {
      * @return True if the input is the "bye" command.
      */
     public boolean isExit(String input) {
-        return Parser.parseCommandType(input) == Parser.CommandType.BYE;
+        return Parser.parseCommandType(input.trim()) == Parser.CommandType.BYE;
     }
 
     /**
@@ -91,9 +114,10 @@ public class Botzilla {
      * @return Botzilla's reply, ready to display.
      */
     public String getResponse(String input) {
-        Parser.CommandType type = Parser.parseCommandType(input);
+        String trimmed = input.trim();
+        Parser.CommandType type = Parser.parseCommandType(trimmed);
         try {
-            return executeCommand(type, input);
+            return executeCommand(type, trimmed);
         } catch (BotzillaException e) {
             return ui.formatError(e.getMessage());
         }
@@ -124,8 +148,7 @@ public class Botzilla {
                         ? input.substring(deleteKeywordLength).trim() : "";
                 int index = Parser.parseTaskNumber(numberText, tasks.size());
                 Task removed = tasks.remove(index);
-                storage.save(tasks.getAll());
-                return ui.formatTaskDeleted(removed, tasks.size());
+                return ui.formatTaskDeleted(removed, tasks.size()) + trySave();
             }
             case ON: {
                 LocalDate targetDate = Parser.parseOnDate(input);
@@ -158,11 +181,16 @@ public class Botzilla {
      *
      * @param task the task to add.
      * @return the formatted confirmation message.
+     * @throws BotzillaException if an equivalent task (same type, name, and
+     *                           date(s)) is already in the list.
      */
-    private String addTask(Task task) {
+    private String addTask(Task task) throws BotzillaException {
+        if (tasks.hasDuplicate(task)) {
+            throw new BotzillaException("You've already got \"" + task.getName()
+                    + "\" on your list with the same details — no need to add it twice!");
+        }
         tasks.add(task);
-        storage.save(tasks.getAll());
-        return ui.formatTaskAdded(task, tasks.size());
+        return ui.formatTaskAdded(task, tasks.size()) + trySave();
     }
 
     /**
@@ -178,11 +206,11 @@ public class Botzilla {
      * @throws BotzillaException if the task number is missing, invalid, or out of range.
      */
     private String markTask(String input, int keywordLength, boolean markAsDone) throws BotzillaException {
-        int index = Parser.parseTaskNumber(input.substring(keywordLength), tasks.size());
+        String numberText = input.length() > keywordLength ? input.substring(keywordLength).trim() : "";
+        int index = Parser.parseTaskNumber(numberText, tasks.size());
         Task task = tasks.get(index);
         String result = ui.formatMarkResult(markAsDone ? task.mark() : task.unmark());
-        storage.save(tasks.getAll());
-        return result;
+        return result + trySave();
     }
 
     /**
@@ -209,8 +237,28 @@ public class Botzilla {
             }
             messages.append(message);
         }
-        storage.save(tasks.getAll());
-        return ui.formatTagResult(messages.toString());
+        return ui.formatTagResult(messages.toString()) + trySave();
+    }
+
+    /**
+     * Persists the current task list to disk, catching and reporting any
+     * failure instead of letting it interrupt the command that triggered
+     * it (the in-memory change has already been made either way). Console
+     * and GUI users alike would otherwise have no way to know a save
+     * silently failed.
+     *
+     * @return a warning suffix to append to the calling command's
+     *         confirmation message if the save failed, or an empty string
+     *         if it succeeded.
+     */
+    private String trySave() {
+        try {
+            storage.save(tasks.getAll());
+            return "";
+        } catch (BotzillaException e) {
+            return "\n" + ui.formatError("I couldn't save your tasks to disk (" + e.getMessage()
+                    + "). This change will be lost if you close the app!");
+        }
     }
 
     /**

@@ -4,6 +4,8 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Optional;
 
+import botzilla.BotzillaException;
+
 /**
  * Represents a task that must be completed by a specific date/time,
  * e.g. "return book /by 2/12/2019 1800". If the given date text can't
@@ -15,12 +17,14 @@ public class DeadlineTask extends Task {
     /**
      * Constructs a new DeadlineTask, attempting to parse the given
      * deadline text as a date or date-time. Falls back to storing it
-     * as raw text if parsing fails.
+     * as raw text if it isn't date-shaped at all.
      *
      * @param name Display name/description of the task.
      * @param by Deadline text, e.g. "2/12/2019 1800" or free text.
+     * @throws BotzillaException if {@code by} is date-shaped but names an
+     *                           invalid calendar date or time (see {@link DateTimeUtil#parse}).
      */
-    public DeadlineTask(String name, String by) {
+    public DeadlineTask(String name, String by) throws BotzillaException {
         super(name, TaskType.DEADLINE);
         this.by = FlexibleDateTime.parse(by);
     }
@@ -58,5 +62,14 @@ public class DeadlineTask extends Task {
     @Override
     public Optional<LocalDate> getDate() {
         return Optional.ofNullable(getBy()).map(LocalDateTime::toLocalDate);
+    }
+
+    /**
+     * Returns this task's duplicate-detection signature, including its
+     * deadline field alongside the base type/name signature.
+     */
+    @Override
+    String duplicateSignature() {
+        return super.duplicateSignature() + "|" + by.toFileString();
     }
 }

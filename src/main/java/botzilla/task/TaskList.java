@@ -115,6 +115,19 @@ public class TaskList {
     }
 
     /**
+     * Checks whether a task with the same substantive content (type, name,
+     * and for deadlines/events its date field(s)) as {@code candidate}
+     * already exists in the list, ignoring done/tag state. Used to catch
+     * an accidental re-entry of a task that's already on the list.
+     *
+     * @param candidate the task about to be added
+     * @return true if an equivalent task is already present
+     */
+    public boolean hasDuplicate(Task candidate) {
+        return tasks.stream().anyMatch(t -> t.duplicateSignature().equals(candidate.duplicateSignature()));
+    }
+
+    /**
      * Returns all tasks whose name contains the given keyword,
      * case-insensitively, in their original order.
      *
