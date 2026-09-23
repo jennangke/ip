@@ -69,10 +69,26 @@ public class DialogBox extends HBox {
         dialog.getStyleClass().add("reply-label");
     }
 
+    /**
+     * Creates a dialog box for a message from the user, with the display
+     * picture on the right and text on the left.
+     *
+     * @param text text to display in the dialog box
+     * @param img  display picture to show
+     * @return the constructed dialog box
+     */
     public static DialogBox getUserDialog(String text, Image img) {
         return new DialogBox(text, img);
     }
 
+    /**
+     * Creates a dialog box for a message from Botzilla, flipped so the
+     * display picture is on the left and text is on the right.
+     *
+     * @param text text to display in the dialog box
+     * @param img  display picture to show
+     * @return the constructed dialog box
+     */
     public static DialogBox getBotzillaDialog(String text, Image img) {
         var db = new DialogBox(text, img);
         db.flip();
