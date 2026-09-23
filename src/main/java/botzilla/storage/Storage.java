@@ -125,7 +125,7 @@ public class Storage {
                 default:
                     return null;
             }
-        } catch (Exception e) {
+        } catch (BotzillaException e) {
             return null;
         }
 
