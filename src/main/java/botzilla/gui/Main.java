@@ -31,7 +31,7 @@ public class Main extends Application {
             fxmlLoader.<MainWindow>getController().setBotzilla(botzilla);
             stage.show();
         } catch (IOException e) {
-            e.printStackTrace();
+            throw new RuntimeException("Failed to load MainWindow.fxml", e);
         }
     }
 }
