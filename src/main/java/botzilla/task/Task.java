@@ -29,7 +29,7 @@ public abstract class Task {
                 : "Task name should never be null or blank; callers (e.g. Parser) must reject empty "
                 + "descriptions before constructing a Task";
         this.name = name;
-        this.isDone = false;
+        isDone = false;
         this.type = type;
     }
 
@@ -40,7 +40,7 @@ public abstract class Task {
      */
     public String mark() {
         isDone = true;
-        return this.name + " marked as done! You go girl!";
+        return name + " marked as done! You go girl!";
     }
 
     /**
@@ -50,7 +50,7 @@ public abstract class Task {
      */
     public String unmark() {
         isDone = false;
-        return this.name + " is now marked as not done! Keep pushing on!";
+        return name + " is now marked as not done! Keep pushing on!";
     }
 
     /**
@@ -61,7 +61,7 @@ public abstract class Task {
      */
     @Override
     public String toString() {
-        return "[" + type.getIcon() + "][" + getTaskStatus() + "] " + this.name;
+        return "[" + type.getIcon() + "][" + getTaskStatus() + "] " + name;
     }
 
     /**
@@ -80,7 +80,7 @@ public abstract class Task {
      * @return the task encoded as "type icon | done flag | name"
      */
     public String toFileString() {
-        return type.getIcon() + " | " + (isDone ? "1" : "0") + " | " + this.name;
+        return type.getIcon() + " | " + (isDone ? "1" : "0") + " | " + name;
     }
 
     /**
