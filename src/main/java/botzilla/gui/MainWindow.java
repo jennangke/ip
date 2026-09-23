@@ -16,6 +16,8 @@ import javafx.util.Duration;
  * Controller for the main GUI window.
  */
 public class MainWindow extends AnchorPane {
+    private static final int GOODBYE_DELAY_SECONDS = 3;
+
     @FXML
     private ScrollPane scrollPane;
     @FXML
@@ -77,7 +79,7 @@ public class MainWindow extends AnchorPane {
         userInput.setDisable(true);
         sendButton.setDisable(true);
 
-        PauseTransition delay = new PauseTransition(Duration.seconds(3));
+        PauseTransition delay = new PauseTransition(Duration.seconds(GOODBYE_DELAY_SECONDS));
         delay.setOnFinished(event -> Platform.exit());
         delay.play();
     }
